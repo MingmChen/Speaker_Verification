@@ -1,7 +1,9 @@
 import sys
 import os
-
+# Paths
 ROOT = os.path.abspath(os.path.dirname(__file__))
+DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
+DATA_TEMP = os.path.join(ROOT, 'data_temp/')
 
 # Signal processing
 SAMPLE_RATE = 16000
@@ -21,3 +23,4 @@ INPUT_SHAPE=(NUM_FFT,None,1)
 ENROLL_LIST_FILE = "cfg/enroll_list.csv"
 TEST_LIST_FILE = "cfg/test_list.csv"
 RESULT_FILE = "res/results.csv"
+

@@ -7,7 +7,7 @@ import numpy
 import math
 import logging
 import os
-
+from Utils import *
 # This file includes routines for basic signal processing including framing and computing power spectra.
 # Author: James Lyons 2012
 
@@ -146,10 +146,6 @@ def preemphasis(signal, coeff=0.95):
     return numpy.append(signal[0], signal[1:] - coeff * signal[:-1])
 
 
-def load_wav(filename, sample_rate):
-    audio, sr = librosa.load(filename, sr=sample_rate, mono=True)
-    audio = audio.flatten()
-    return audio
 
 
 def normalize_frames(m, epsilon=1e-12):

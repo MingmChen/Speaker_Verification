@@ -1,4 +1,4 @@
-VoxCeleb1_ID VGGFace1_ID	Gender	Nationality Set
+VoxCeleb1_ID	VGGFace1_ID	Gender	Nationality	Set
 id10001	A.J._Buckley	m	Ireland	dev
 id10002	A.R._Rahman	m	India	dev
 id10003	Aamir_Khan	m	India	dev
