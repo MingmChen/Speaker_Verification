@@ -1,4 +1,7 @@
-from pyaudio import paInt16
+import sys
+import os
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 # Signal processing
 SAMPLE_RATE = 16000
