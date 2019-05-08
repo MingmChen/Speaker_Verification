@@ -1,5 +1,6 @@
 import sys
 import os
+
 # Paths
 ROOT = os.path.abspath(os.path.dirname(__file__))
 DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
@@ -17,10 +18,4 @@ MAX_SEC = 10
 # Model
 WEIGHTS_FILE = "data/model/weights.h5"
 COST_METRIC = "cosine"  # euclidean or cosine
-INPUT_SHAPE=(NUM_FFT,None,1)
-
-# IO
-ENROLL_LIST_FILE = "cfg/enroll_list.csv"
-TEST_LIST_FILE = "cfg/test_list.csv"
-RESULT_FILE = "res/results.csv"
-
+INPUT_SHAPE = (NUM_FFT, None, 1)
