@@ -6,8 +6,6 @@ import decimal
 import numpy
 import math
 import logging
-import os
-from Utils import *
 # This file includes routines for basic signal processing including framing and computing power spectra.
 # Author: James Lyons 2012
 

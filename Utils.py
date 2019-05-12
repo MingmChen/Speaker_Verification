@@ -5,7 +5,7 @@ import os
 import shutil
 import Constants as c
 from sklearn.utils import shuffle
-from preprocess.sigproc_tools import lfilter, preemphasis, framesig
+from preprocess.sigproc_tools import lfilter
 
 np.random.seed(12345)
 
@@ -23,66 +23,13 @@ def remove_dc_and_dither(sin):
     return sout
 
 
-def get_fft_spectrum(filename, buckets):
-    signal = load_wav(filename, c.SAMPLE_RATE)
-    signal *= 2 ** 15
-
-    # get FFT spectrum
-    signal = remove_dc_and_dither(signal)
-    signal = preemphasis(signal, coeff=c.PREEMPHASIS_ALPHA)
-    frames = framesig(signal, frame_len=c.FRAME_LEN * c.SAMPLE_RATE, frame_step=c.FRAME_STEP * c.SAMPLE_RATE,
-                      winfunc=np.hamming)
-    fft = abs(np.fft.fft(frames, n=c.NUM_FFT))
-    fft_norm = normalize_frames(fft.T)
-
-    # truncate to max bucket sizes
-    rsize = max(k for k in buckets if k <= fft_norm.shape[1])
-    rstart = int((fft_norm.shape[1] - rsize) / 2)
-    out = fft_norm[:, rstart:rstart + rsize]
-
-    return out
-
-
-def load_wav(filename, sample_rate):
+def load_wav(filename, sample_rate=16000):
     audio, sr = librosa.load(filename, sr=sample_rate, mono=True)
     audio = audio.flatten()
     return audio
 
 
-def create_train_test_txt(loader):
-    test_paths, *_ = loader.verif_test_loader()
-    print("No train and test files found. Preparing them now...")
-    all_paths = []
-    for root, dirs, files in os.walk(loader.data_origin_dir + 'wav'):
-        for file in files:
-            if not file.endswith(".wav"):
-                continue
-            path = os.path.join(root, file).replace(loader.data_origin_dir + 'wav/', '')
-            all_paths.append(path)
-
-    train_paths = []
-    for all in all_paths:
-        if not all in test_paths:
-            train_paths.append(all)
-
-    train_paths = np.array(train_paths).reshape(-1, 1)
-    np.savetxt(loader.data_temp_dir + 'train_paths.txt', train_paths, fmt='%s')
-    np.savetxt(loader.data_temp_dir + 'test_paths.txt', test_paths, fmt='%s')
-
-
-def copy_and_overwrite(from_path, to_path):
-    try:
-        shutil.copy(from_path, to_path)
-    except IOError as e:
-        # ENOENT(2): file does not exist, raised also on missing dest parent dir
-        if e.errno != errno.ENOENT:
-            raise
-        # try creating parent directories
-        os.makedirs(os.path.dirname(to_path))
-        shutil.copy(from_path, to_path)
-
-
-class DataLoader(object):
+class CopyDataFiles(object):
     def __init__(self, data_origin_dir=None, data_temp_dir=None, n_samples=5):
         """
         :param data_origin_dir: Path to original data. Contains everything with processing the files.
@@ -113,14 +60,14 @@ class DataLoader(object):
                 # ENOENT(2): file does not exist, raised also on missing dest parent dir
                 if e.errno != errno.ENOENT:
                     raise
-                create_train_test_txt(self)
+                self._create_train_test_txt()
 
         self.move_from_origin_to_temp_dir(n_samples=n_samples)
 
     def move_from_origin_to_temp_dir(self, full_list=None, n_samples=3, from_path=None, to_path=None):
         """
         :param full_list: The List of paths in pairs or in single list
-        :param n_pairs: How many pair are gonna get copied to the to_path
+        :param n_samples: How many samples are gonna get copied to the to_path
         :param from_path: The path that the original data are located
         :param to_path: The path that the temp data is located (Default is data_temp_dir)
         :return: None
@@ -136,7 +83,8 @@ class DataLoader(object):
 
         full_list = shuffle(full_list)
         data_list = full_list[:n_samples]
-
+        self._save_to_txt(self.data_temp_dir + 'samples_paths.txt', data_list)
+        self.file_samples_paths = self.data_temp_dir + 'samples_paths.txt'
         if len(data_list.shape) > 1:
             # print(data_list)
             # if the list is actually a tuple
@@ -145,7 +93,8 @@ class DataLoader(object):
         for path in data_list:
             temp_from_path = os.path.join(from_path, path)
             temp_to_path = os.path.join(to_path, path)
-            copy_and_overwrite(temp_from_path, temp_to_path)
+
+            self._copy_and_overwrite(temp_from_path, temp_to_path)
         print(f'Moved {n_samples} files to {self.data_temp_dir}.\nFile format is: "speaker_id/video_id/file.wav"\n')
 
     def verif_test_loader(self, path=None):
@@ -175,13 +124,47 @@ class DataLoader(object):
         # print(np.unique(data[:,3]))
         return data
 
-    def fetc_data(self, path_to_data=None, list_data=None):
 
-        if path_to_data is None:
-            path_to_data = self.data_temp_dir
+    def _copy_and_overwrite(self, from_path, to_path):
+        try:
+            shutil.copy(from_path, to_path)
+        except IOError as e:
+            # ENOENT(2): file does not exist, raised also on missing dest parent dir
+            if e.errno != errno.ENOENT:
+                raise
+            # try creating parent directories
+            os.makedirs(os.path.dirname(to_path))
+            shutil.copy(from_path, to_path)
 
-        # if list_data is None:
+    def _create_train_test_txt(self):
+        test_paths, *_ = self.verif_test_loader()
+        print("No train and test files found. Preparing them now...")
+        all_paths = []
+        for root, dirs, files in os.walk(loader.data_origin_dir + 'wav'):
+            for file in files:
+                if not file.endswith(".wav"):
+                    continue
+                path = os.path.join(root, file).replace(loader.data_origin_dir + 'wav/', '')
+                all_paths.append(path)
+
+        train_paths = []
+        for all in all_paths:
+            if not all in test_paths:
+                train_paths.append(all)
+
+        train_paths = np.array(train_paths).reshape(-1, 1)
+
+        self._save_to_txt(self.data_temp_dir + 'train_paths.txt', train_paths)
+        self._save_to_txt(self.data_temp_dir + 'test_paths.txt', test_paths)
+
+        self.file_train_paths = self.data_temp_dir + 'train_paths.txt'
+        self.file_test_paths = self.data_temp_dir + 'test_paths.txt'
+
+    def _save_to_txt(self, path, data_list):
+        np.savetxt(path, data_list, fmt='%s')
 
 
 if __name__ == "__main__":
-    loader = DataLoader()
+    # loader = CopyDataFiles()
+    audio, sr = librosa.load('/Users/polaras/Documents/Useful/dataset/data_original/wav/id10309/_z_BR0ERa9g/00002.wav', sr=16000, mono=True)
+

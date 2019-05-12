@@ -1,4 +1,5 @@
 #VoxCeleb1 
+* pip install speechpy
 * contains over 100,000 utterances for 1,251 celebrities, extracted from videos uploaded to YouTube. 
 # Verification split dev test
 * of speakers	1,211	40
