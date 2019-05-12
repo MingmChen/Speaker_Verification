@@ -8,14 +8,16 @@ import torch
 import numpy as np
 import PIL
 import matplotlib.pyplot as plt
-import tqdm
+from tqdm import tqdm
 import time
 
 
 class C3D(torch.nn.Module):
-    def __init__(self, depth, frames, coefficients):
+    def __init__(self, data_shape, depth=3, frames=1, coefficients=5):
         super(C3D, self).__init__()
-        self.depth, self.frames, self.coefficients = depth, frames, coefficients
+        self.data_shape, self.depth, self.frames, self.coefficients = data_shape, depth, frames, coefficients
+        if self.data_shape[2] < 3:
+            self.depth = self.data_shape[1]
         self.conv1_1 = torch.nn.Conv3d(1, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1))
         self.PReLu1_1 = torch.nn.PReLU()
         self.conv1_2 = torch.nn.Conv3d(16, 16, kernel_size=(3, 9, 1), stride=(1, 2, 1))
@@ -63,11 +65,67 @@ class C3D(torch.nn.Module):
         x = F.softmax(self.FC6(x))
         return x
 
+    def LossAndOptimizer(self):
+        self.loss = torch.nn.CrossEntropyLoss()
+        self.optimizer = optim.adadelta.Adadelta(C3D.parameters(self), lr=self.learning_rate)
+
+    def Fit(self, batch_size, n_epochs, learning_rate=.001, train_data=None, validation_data=None, test_data=None,
+            labels=None):
+        self.batch_size, self.n_epochs, self.learning_rate = batch_size, n_epochs, learning_rate
+        print("=" * 30)
+        print("batch_size", batch_size)
+        print("epochs", n_epochs)
+        print("learning_rate", learning_rate)
+        print("=" * 30)
+        n_training_samples = 20000
+        train_sampler = SubsetRandomSampler(np.arange(self.data_shape[0], dtype=np.int64))
+        train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, sampler=train_sampler,
+                                                   num_workers=2)
+        n_val_samples = 5000
+        val_sampler = SubsetRandomSampler(
+            np.arange(n_training_samples, n_training_samples + n_val_samples, dtype=np.int64))
+        n_test_samples = 5000
+        test_sampler = SubsetRandomSampler(np.arange(n_test_samples, dtype=np.int64))
+        test_loader = torch.utils.data.DataLoader(test_data, batch_size=4, sampler=test_sampler, num_workers=2)
+        val_loader = torch.utils.data.DataLoader(train_data, batch_size=128, sampler=val_sampler, num_workers=2)
+        n_batches = len(train_loader)
+        self.LossAndOptimizer()
+        training_start_time = time.time()
+        for epoch in tqdm(range(n_epochs)):
+            start_time = time.time()
+            running_loss = 0.0
+            print_every = n_batches // 10
+            total_train_loss = 0
+            for index, data in enumerate(train_loader, 0):
+                inputs, labels = data
+                inputs, labels = Variable(inputs), Variable(labels)
+                self.optimizer.zero_grad()
+                outputs = C3D(inputs)
+                loss_size = self.loss(outputs, labels)
+                loss_size.backward()
+                self.optimizer.step()
+                running_loss += loss_size.data
+                total_train_loss += loss_size.data
+                if (index + 1) % (print_every + 1) == 0:
+                    print("Epoch {}, {:d}% \t train_loss: {:.2f} took: {:.2f}s".format(
+                        epoch + 1, int(100 * (index + 1) / n_batches), running_loss / print_every,
+                        time.time() - start_time))
+                    running_loss = 0.0
+                    start_time = time.time()
+                total_val_loss = 0
+                for inputs, labels in val_loader:
+                    inputs, labels = Variable(inputs), Variable(labels)
+                    val_outputs = C3D(inputs)
+                    val_loss_size = self.loss(val_outputs, labels)
+                    total_val_loss += val_loss_size.data
+                print("Validation loss = {:.2f}".format(total_val_loss / len(val_loader)))
+            print("Training finished, took {:.2f}s".format(time.time() - training_start_time))
+
 
 if __name__ == '__main__':
     # CNN = SimpleCNN()
     # trainNet(CNN, batch_size=32, n_epochs=5, learning_rate=0.001)
     toy_data = torch.randn(1, 1, 20, 80, 40)
-    toy = C3D()
+    toy = C3D(toy_data.shape)
     output = toy(toy_data)
     print('hi')
