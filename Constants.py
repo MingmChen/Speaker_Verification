@@ -16,3 +16,8 @@ NUM_COEF = 40
 NUM_FFT = 1024
 BUCKET_STEP = 1
 MAX_SEC = 10
+
+
+# Model training
+MODEL_DIR = ROOT + '/Models'
+EPOCHS_PER_SAVE = 20

@@ -7,8 +7,46 @@ import speechpy
 import Constants as c
 from sklearn.utils import shuffle
 import torch
-
+from matplotlib import pyplot as plt
 np.random.seed(12345)
+
+
+
+def save_checkpoint(state, is_best, filename='checkpoint.pt'):
+    print('saving model ...')
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, c.MODEL_DIR + '/model_best.pt')
+
+
+def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
+    fig = plt.figure()
+    ax = fig.gca()
+    plt.title('Loss')
+    plt.plot(train_loss, color='r')
+    plt.plot(val_loss, color='g')
+    plt.xlabel('Epochs')
+    plt.legend(['train_cost', 'val_cost'])
+    plt.grid()
+    plt.savefig('final_loss.png')
+
+    fig = plt.figure()
+    ax = fig.gca()
+    plt.title('Accuracy')
+    plt.plot(train_acc, color='r')
+    plt.plot(val_acc, color='g')
+    plt.xlabel('Epochs')
+    plt.legend(['train_accuracy', 'val_accuracy'])
+    plt.grid()
+    plt.savefig('final_accuracy.png')
+
+def save_file(path_to_file, file):
+    torch.save(file, path_to_file)
+
+
+def load_file(path_to_file):
+    file = torch.load(path_to_file)
+    return file
 
 
 def normalize_frames(m, epsilon=1e-12):
@@ -160,7 +198,7 @@ class ToTensor(object):
     """
 
     def __call__(self, sample):
-        feature, label = torch.tensor(sample['feature']), sample['label']
+        feature, label = sample['feature'], sample['label']
         return feature, label
 
 
@@ -170,23 +208,22 @@ class FeatureCube(object):
         cube_shape (tuple): The shape of the feature cube.
     """
 
-    def __init__(self, cube_shape, augmentation=True):
-        self.augmentation = augmentation
+    def __init__(self, cube_shape):
+        assert isinstance(cube_shape, (tuple))
         self.cube_shape = cube_shape
-        self.num_utterances = cube_shape[0]
-        self.num_frames = cube_shape[1]
-        self.num_coefficient = cube_shape[2]
+        self.num_frames = cube_shape[0]
+        self.num_coefficient = cube_shape[1]
+        self.num_utterances = cube_shape[2]
 
     def __call__(self, sample):
         feature, label = sample['feature'], sample['label']
 
-        # Get some random starting point for creation of the future cube of size
-        # (num_frames x num_coefficient x num_utterances)
-        # Since we are doing random indexing, the data augmentation is done as
-        # well because in each iteration it returns another indexing!
-        idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
         # Feature cube.
         feature_cube = np.zeros((self.num_utterances, self.num_frames, self.num_coefficient), dtype=np.float32)
+
+        # Get some random starting point for creation of the future cube of size (num_frames x num_coefficient x num_utterances)
+        # Since we are doing random indexing, the data augmentation is done as well because in each iteration it returns another indexing!
+        idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
         for num, index in enumerate(idx):
             feature_cube[num, :, :] = feature[index:index + self.num_frames, :]
 

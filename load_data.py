@@ -63,8 +63,8 @@ class AudioDataset(data.Dataset):
                                           )
 
         # Label extraction
-        label = self.sound_files[idx][:7]
-
+        # label = int(self.sound_files[idx][2:7])
+        label = idx
         sample = {
             'feature': logenergy,
             'label': label
@@ -78,35 +78,24 @@ class AudioDataset(data.Dataset):
             feature, label = toTensor(sample)
             sample = feature, label
 
-        print(label)
         return sample
 
 
 if __name__ == '__main__':
-    pass
-    # dirs = Utils.CopyDataFiles(n_samples=15000)
+    dirs = CopyDataFiles(n_samples=10)
 
-    # cube = FeatureCube(cube_shape=(20, 80, 40), augmentation=True)
-    #
-    # transform = transforms.Compose([CMVN(), cube, ToTensor()])
-    #
-    # db = AudioDataset(c.DATA_ORIGIN + 'train_paths.txt', c.DATA_ORIGIN + 'wav/', transform=transform)
-    #
-    # trainloader = data.DataLoader(db, batch_size=64)
-    #
-    # N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))
+    cube = FeatureCube((80, 40, 20))
+
+    transform = transforms.Compose([CMVN(), cube, ToTensor()])
+
+
+    db = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP , transform=transform)
+
+    N = len(np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str'))
     # print(N)
-    # dataset = torch.cat([db.__getitem__(idx)[0] for idx in range(N)])
-    # labels = [db.__getitem__(idx)[1] for idx in range(N)]
-    #
-    # torch.save(dataset, 'dataset.pt')
-    # torch.save(labels, 'labels.pt')
-    #
-    # labels = np.load('labels.pt')
-    # labels, freq_occ = np.unique(labels, return_counts=True)
-    #
-    # for label in labels:
-    #     print(label)
+    dataset = [db.__getitem__(idx)[0] for idx in range(N)]
+    labels = [db.__getitem__(idx)[1] for idx in range(N)]
 
-    # print(batch_features.shape)
-    # print(batch_labels)
+    data_point = db.__getitem__(0)[0]
+
+    print(data_point.shape)
