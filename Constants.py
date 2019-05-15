@@ -1,10 +1,11 @@
-import sys
 import os
 
 # Paths
 ROOT = os.path.abspath(os.path.dirname(__file__))
-DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
 DATA_TEMP = os.path.join(ROOT, 'data_temp/')
+
+DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
+
 
 # Signal processing
 SAMPLE_RATE = 16000
@@ -15,11 +16,3 @@ NUM_COEF = 40
 NUM_FFT = 1024
 BUCKET_STEP = 1
 MAX_SEC = 10
-
-
-
-
-# Model
-WEIGHTS_FILE = "data/model/weights.h5"
-COST_METRIC = "cosine"  # euclidean or cosine
-INPUT_SHAPE = (NUM_FFT, None, 1)

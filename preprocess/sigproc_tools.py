@@ -1,14 +1,9 @@
-import librosa
-import numpy as np
-from scipy.signal import lfilter
-import Constants as c
 import decimal
-import numpy
 import math
 import logging
 # This file includes routines for basic signal processing including framing and computing power spectra.
 # Author: James Lyons 2012
-
+from Utils import *
 
 
 def round_half_up(number):
@@ -19,10 +14,10 @@ def rolling_window(a, window, step=1):
     # http://ellisvalentiner.com/post/2017-03-21-np-strides-trick
     shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
     strides = a.strides + (a.strides[-1],)
-    return numpy.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)[::step]
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)[::step]
 
 
-def framesig(sig, frame_len, frame_step, winfunc=lambda x: numpy.ones((x,)), stride_trick=True):
+def framesig(sig, frame_len, frame_step, winfunc=lambda x: np.ones((x,)), stride_trick=True):
     """Frame a signal into overlapping frames.
 
     :param sig: the audio signal to frame.
@@ -42,22 +37,22 @@ def framesig(sig, frame_len, frame_step, winfunc=lambda x: numpy.ones((x,)), str
 
     padlen = int((numframes - 1) * frame_step + frame_len)
 
-    zeros = numpy.zeros((padlen - slen,))
-    padsignal = numpy.concatenate((sig, zeros))
+    zeros = np.zeros((padlen - slen,))
+    padsignal = np.concatenate((sig, zeros))
     if stride_trick:
         win = winfunc(frame_len)
         frames = rolling_window(padsignal, window=frame_len, step=frame_step)
     else:
-        indices = numpy.tile(numpy.arange(0, frame_len), (numframes, 1)) + numpy.tile(
-            numpy.arange(0, numframes * frame_step, frame_step), (frame_len, 1)).T
-        indices = numpy.array(indices, dtype=numpy.int32)
+        indices = np.tile(np.arange(0, frame_len), (numframes, 1)) + np.tile(
+            np.arange(0, numframes * frame_step, frame_step), (frame_len, 1)).T
+        indices = np.array(indices, dtype=np.int32)
         frames = padsignal[indices]
-        win = numpy.tile(winfunc(frame_len), (numframes, 1))
+        win = np.tile(winfunc(frame_len), (numframes, 1))
 
     return frames * win
 
 
-def deframesig(frames, siglen, frame_len, frame_step, winfunc=lambda x: numpy.ones((x,))):
+def deframesig(frames, siglen, frame_len, frame_step, winfunc=lambda x: np.ones((x,))):
     """Does overlap-add procedure to undo the action of framesig.
 
     :param frames: the array of frames.
@@ -69,18 +64,18 @@ def deframesig(frames, siglen, frame_len, frame_step, winfunc=lambda x: numpy.on
     """
     frame_len = round_half_up(frame_len)
     frame_step = round_half_up(frame_step)
-    numframes = numpy.shape(frames)[0]
-    assert numpy.shape(frames)[1] == frame_len, '"frames" matrix is wrong size, 2nd dim is not equal to frame_len'
+    numframes = np.shape(frames)[0]
+    assert np.shape(frames)[1] == frame_len, '"frames" matrix is wrong size, 2nd dim is not equal to frame_len'
 
-    indices = numpy.tile(numpy.arange(0, frame_len), (numframes, 1)) + numpy.tile(
-        numpy.arange(0, numframes * frame_step, frame_step), (frame_len, 1)).T
-    indices = numpy.array(indices, dtype=numpy.int32)
+    indices = np.tile(np.arange(0, frame_len), (numframes, 1)) + np.tile(
+        np.arange(0, numframes * frame_step, frame_step), (frame_len, 1)).T
+    indices = np.array(indices, dtype=np.int32)
     padlen = (numframes - 1) * frame_step + frame_len
 
     if siglen <= 0: siglen = padlen
 
-    rec_signal = numpy.zeros((padlen,))
-    window_correction = numpy.zeros((padlen,))
+    rec_signal = np.zeros((padlen,))
+    window_correction = np.zeros((padlen,))
     win = winfunc(frame_len)
 
     for i in range(0, numframes):
@@ -99,12 +94,12 @@ def magspec(frames, NFFT):
     :param NFFT: the FFT length to use. If NFFT > frame_len, the frames are zero-padded.
     :returns: If frames is an NxD matrix, output will be Nx(NFFT/2+1). Each row will be the magnitude spectrum of the corresponding frame.
     """
-    if numpy.shape(frames)[1] > NFFT:
+    if np.shape(frames)[1] > NFFT:
         logging.warn(
             'frame length (%d) is greater than FFT size (%d), frame will be truncated. Increase NFFT to avoid.',
-            numpy.shape(frames)[1], NFFT)
-    complex_spec = numpy.fft.rfft(frames, NFFT)
-    return numpy.absolute(complex_spec)
+            np.shape(frames)[1], NFFT)
+    complex_spec = np.fft.rfft(frames, NFFT)
+    return np.absolute(complex_spec)
 
 
 def powspec(frames, NFFT):
@@ -114,7 +109,7 @@ def powspec(frames, NFFT):
     :param NFFT: the FFT length to use. If NFFT > frame_len, the frames are zero-padded.
     :returns: If frames is an NxD matrix, output will be Nx(NFFT/2+1). Each row will be the power spectrum of the corresponding frame.
     """
-    return 1.0 / NFFT * numpy.square(magspec(frames, NFFT))
+    return 1.0 / NFFT * np.square(magspec(frames, NFFT))
 
 
 def logpowspec(frames, NFFT, norm=1):
@@ -127,9 +122,9 @@ def logpowspec(frames, NFFT, norm=1):
     """
     ps = powspec(frames, NFFT);
     ps[ps <= 1e-30] = 1e-30
-    lps = 10 * numpy.log10(ps)
+    lps = 10 * np.log10(ps)
     if norm:
-        return lps - numpy.max(lps)
+        return lps - np.max(lps)
     else:
         return lps
 
@@ -141,7 +136,7 @@ def preemphasis(signal, coeff=0.95):
     :param coeff: The preemphasis coefficient. 0 is no filter, default is 0.95.
     :returns: the filtered signal.
     """
-    return numpy.append(signal[0], signal[1:] - coeff * signal[:-1])
+    return np.append(signal[0], signal[1:] - coeff * signal[:-1])
 
 
 

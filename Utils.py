@@ -3,24 +3,16 @@ import librosa
 import numpy as np
 import os
 import shutil
+import speechpy
 import Constants as c
 from sklearn.utils import shuffle
-from preprocess.sigproc_tools import lfilter
+import torch
 
 np.random.seed(12345)
 
 
 def normalize_frames(m, epsilon=1e-12):
     return np.array([(v - np.mean(v)) / max(np.std(v), epsilon) for v in m])
-
-
-# https://github.com/christianvazquez7/ivector/blob/master/MSRIT/rm_dc_n_dither.m
-def remove_dc_and_dither(sin):
-    sin = lfilter([1, -1], [1, -0.99], sin)
-    dither = np.random.random_sample(len(sin)) + np.random.random_sample(len(sin)) - 1
-    spow = np.std(dither)
-    sout = sin + 1e-6 * spow * dither
-    return sout
 
 
 def load_wav(filename, sample_rate=16000):
@@ -97,7 +89,7 @@ class CopyDataFiles(object):
             self._copy_and_overwrite(temp_from_path, temp_to_path)
         print(f'Moved {n_samples} files to {self.data_temp_dir}.\nFile format is: "speaker_id/video_id/file.wav"\n')
 
-    def verif_test_loader(self, path=None):
+    def _verif_test_loader(self, path=None):
         """
 
         :param path: Path to verification file
@@ -116,14 +108,13 @@ class CopyDataFiles(object):
 
         return np.unique(files_1).reshape(-1, 1), labels, pairs
 
-    def metadata_loader(self, path=None):
+    def _metadata_loader(self, path=None):
         if path is None:
             path = self.data_temp_dir
 
         data = np.genfromtxt(path + 'vox1_meta.csv', dtype='str')[1:, :]
         # print(np.unique(data[:,3]))
         return data
-
 
     def _copy_and_overwrite(self, from_path, to_path):
         try:
@@ -137,14 +128,14 @@ class CopyDataFiles(object):
             shutil.copy(from_path, to_path)
 
     def _create_train_test_txt(self):
-        test_paths, *_ = self.verif_test_loader()
+        test_paths, *_ = self._verif_test_loader()
         print("No train and test files found. Preparing them now...")
         all_paths = []
-        for root, dirs, files in os.walk(loader.data_origin_dir + 'wav'):
+        for root, dirs, files in os.walk(self.data_origin_dir + 'wav'):
             for file in files:
                 if not file.endswith(".wav"):
                     continue
-                path = os.path.join(root, file).replace(loader.data_origin_dir + 'wav/', '')
+                path = os.path.join(root, file).replace(self.data_origin_dir + 'wav/', '')
                 all_paths.append(path)
 
         train_paths = []
@@ -164,7 +155,62 @@ class CopyDataFiles(object):
         np.savetxt(path, data_list, fmt='%s')
 
 
+class ToTensor(object):
+    """Return the output in tensor format.
+    """
+
+    def __call__(self, sample):
+        feature, label = torch.tensor(sample['feature']), sample['label']
+        return feature, label
+
+
+class FeatureCube(object):
+    """Return a feature cube of desired size.
+    Args:
+        cube_shape (tuple): The shape of the feature cube.
+    """
+
+    def __init__(self, cube_shape, augmentation=True):
+        self.augmentation = augmentation
+        self.cube_shape = cube_shape
+        self.num_utterances = cube_shape[0]
+        self.num_frames = cube_shape[1]
+        self.num_coefficient = cube_shape[2]
+
+    def __call__(self, sample):
+        feature, label = sample['feature'], sample['label']
+
+        if self.augmentation:
+            # Get some random starting point for creation of the future cube of size
+            # (num_frames x num_coefficient x num_utterances)
+            # Since we are doing random indexing, the data augmentation is done as
+            # well because in each iteration it returns another indexing!
+            idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
+
+        else:
+            idx = range(self.num_utterances)
+
+        # Feature cube.
+        feature_cube = np.zeros((self.num_utterances, self.num_frames, self.num_coefficient), dtype=np.float32)
+        for num, index in enumerate(idx):
+            feature_cube[num, :, :] = feature[index:index + self.num_frames, :]
+
+        # return {'feature': feature_cube, 'label': label}
+        return {'feature': feature_cube[None, :, :, :], 'label': label}
+
+
+class CMVN(object):
+    """Cepstral mean variance normalization."""
+
+    def __call__(self, sample):
+        feature, label = sample['feature'], sample['label']
+        feature = speechpy.processing.cmvn(feature, variance_normalization=True)
+        return {'feature': feature, 'label': label}
+
+
 if __name__ == "__main__":
     # loader = CopyDataFiles()
-    audio, sr = librosa.load('/Users/polaras/Documents/Useful/dataset/data_original/wav/id10309/_z_BR0ERa9g/00002.wav', sr=16000, mono=True)
+    audio, sr = librosa.load('/Users/polaras/Documents/Useful/dataset/data_original/wav/id10309/_z_BR0ERa9g/00002.wav',
+                             sr=16000, mono=True)
 
+    cube = FeatureCube((20, 80, 50))

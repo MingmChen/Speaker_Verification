@@ -1,16 +1,12 @@
-import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import dataset as data
 from torch.autograd import Variable
 import torch.optim as optim
 import torch.nn.functional as F
-import torch
-import numpy as np
-import PIL
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 import time
-
+from Utils import *
 
 class C3D(torch.nn.Module):
     def __init__(self, data_shape, depth=3, frames=1, coefficients=5):
@@ -125,7 +121,25 @@ class C3D(torch.nn.Module):
 if __name__ == '__main__':
     # CNN = SimpleCNN()
     # trainNet(CNN, batch_size=32, n_epochs=5, learning_rate=0.001)
-    toy_data = torch.randn(1, 1, 20, 80, 40)
-    toy = C3D(toy_data.shape)
-    output = toy(toy_data)
-    print('hi')
+    #
+    # dirs = Utils.CopyDataFiles(n_samples=1000)
+    # cube = Feature_Cube(cube_shape=(20, 80, 40), augmentation=True)
+    #
+    # db = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP, transform=transform)
+
+    # trainloader = data.DataLoader(db, batch_size=64)
+    #
+    # N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))
+    #
+    # dataset = torch.cat([db.__getitem__(idx)[0] for idx in range(N)])
+    # labels = [db.__getitem__(idx)[1] for idx in range(N)]
+
+
+    cube = Feature_Cube(cube_shape=(20, 80, 40), augmentation=True)
+    transform = transforms.Compose([CMVN(), cube, ToTensor()])
+    trainset = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP, transform=transform)
+
+    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
+    for index, data in enumerate(trainloader, 0):
+        inputs, labels = data
+        inputs, labels = Variable(inputs), Variable(labels)
