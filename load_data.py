@@ -51,7 +51,9 @@ class AudioDataset(data.Dataset):
 
         signal = Utils.load_wav(sound_file_path)
 
-        frames = speechpy.processing.stack_frames(signal, sampling_frequency=c.SAMPLE_RATE, frame_length=0.025,
+        frames = speechpy.processing.stack_frames(signal,
+                                                  sampling_frequency=c.SAMPLE_RATE,
+                                                  frame_length=0.025,
                                                   frame_stride=0.01,
                                                   zero_padding=True)
 
@@ -63,12 +65,16 @@ class AudioDataset(data.Dataset):
                                           frame_length=c.FRAME_LEN,
                                           frame_stride=c.FRAME_STEP,
                                           num_filters=c.NUM_COEF,
-                                          fft_length=c.NUM_FFT)
+                                          fft_length=c.NUM_FFT
+                                          )
 
         # Label extraction
         label = self.sound_files[idx][:7]
 
-        sample = {'feature': logenergy, 'label': label}
+        sample = {
+            'feature': logenergy,
+            'label': label
+        }
 
         # Apply Transformations
         if self.transform:
@@ -87,7 +93,7 @@ class ToTensor(object):
     """
 
     def __call__(self, sample):
-        feature, label = torch.tensor(sample['feature']), sample['label']
+        feature, label = sample['feature'], sample['label']
         return feature, label
 
 
@@ -142,7 +148,7 @@ if __name__ == '__main__':
 
     db = AudioDataset(c.DATA_ORIGIN + 'train_paths.txt', c.DATA_ORIGIN + 'wav/', transform=transform)
 
-    # trainloader = data.DataLoader(db, batch_size=64)
+    trainloader = data.DataLoader(db, batch_size=64)
 
     N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))
     print(N)
