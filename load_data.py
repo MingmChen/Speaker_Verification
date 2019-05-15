@@ -43,7 +43,7 @@ class AudioDataset(data.Dataset):
     def __getitem__(self, idx):
         sound_file_path = os.path.join(self.audio_dir, self.sound_files[idx])
 
-        signal = Utils.load_wav(sound_file_path)
+        signal = load_wav(sound_file_path)
 
         frames = speechpy.processing.stack_frames(signal,
                                                   sampling_frequency=c.SAMPLE_RATE,
@@ -83,6 +83,7 @@ class AudioDataset(data.Dataset):
 
 
 if __name__ == '__main__':
+    pass
     # dirs = Utils.CopyDataFiles(n_samples=15000)
 
     # cube = FeatureCube(cube_shape=(20, 80, 40), augmentation=True)
@@ -90,7 +91,7 @@ if __name__ == '__main__':
     # transform = transforms.Compose([CMVN(), cube, ToTensor()])
     #
     # db = AudioDataset(c.DATA_ORIGIN + 'train_paths.txt', c.DATA_ORIGIN + 'wav/', transform=transform)
-    # 
+    #
     # trainloader = data.DataLoader(db, batch_size=64)
     #
     # N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))

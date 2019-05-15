@@ -180,16 +180,11 @@ class FeatureCube(object):
     def __call__(self, sample):
         feature, label = sample['feature'], sample['label']
 
-        if self.augmentation:
-            # Get some random starting point for creation of the future cube of size
-            # (num_frames x num_coefficient x num_utterances)
-            # Since we are doing random indexing, the data augmentation is done as
-            # well because in each iteration it returns another indexing!
-            idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
-
-        else:
-            idx = range(self.num_utterances)
-
+        # Get some random starting point for creation of the future cube of size
+        # (num_frames x num_coefficient x num_utterances)
+        # Since we are doing random indexing, the data augmentation is done as
+        # well because in each iteration it returns another indexing!
+        idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
         # Feature cube.
         feature_cube = np.zeros((self.num_utterances, self.num_frames, self.num_coefficient), dtype=np.float32)
         for num, index in enumerate(idx):
