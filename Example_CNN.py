@@ -5,7 +5,7 @@ from torch.autograd import Variable
 import torch.optim as optim
 import torch.nn.functional as F
 import torch
-import numpy as np
+import np as np
 import PIL
 import matplotlib.pyplot as plt
 import tqdm
