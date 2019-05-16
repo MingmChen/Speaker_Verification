@@ -6,10 +6,39 @@ import shutil
 import speechpy
 import Constants as c
 from sklearn.utils import shuffle
+import torch.optim as optim
 import torch
 from matplotlib import pyplot as plt
+from torch.utils.data.sampler import SubsetRandomSampler
+
 np.random.seed(12345)
 
+
+def split_sets(dataset, validation_split=c.VALIDATION_SPLIT, shuffle_dataset=True, batch_size=c.BATCH_SIZE):
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    split = int(np.floor(validation_split * dataset_size))
+
+    if shuffle_dataset:
+        np.random.shuffle(indices)
+
+    train_indices, val_indices = indices[split:], indices[:split]
+
+    # Creating PT data samplers and loaders:
+    train_sampler = SubsetRandomSampler(train_indices)
+    valid_sampler = SubsetRandomSampler(val_indices)
+
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                               sampler=train_sampler)
+    validation_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                                    sampler=valid_sampler)
+
+    return train_loader, validation_loader
+
+def LossAndOptimizer(learning_rate, model):
+    loss = torch.nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    return loss, optimizer
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pt'):
@@ -17,6 +46,14 @@ def save_checkpoint(state, is_best, filename='checkpoint.pt'):
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, c.MODEL_DIR + '/model_best.pt')
+
+def calculate_accuracy(model, X, Y):
+    oupt = model(X)
+    (max_vals, arg_maxs) = torch.max(oupt.data, dim=1)
+
+    num_correct = torch.sum(Y == arg_maxs)
+    acc = (num_correct * 100.0 / len(Y))
+    return acc.item()  #
 
 
 def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
@@ -242,7 +279,8 @@ class CMVN(object):
 
 if __name__ == "__main__":
     # loader = CopyDataFiles()
-    audio, sr = librosa.load('/Users/polaras/Documents/Useful/dataset/data_original/wav/id10309/_z_BR0ERa9g/00002.wav',
-                             sr=16000, mono=True)
+    file = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
 
-    cube = FeatureCube((20, 80, 50))
+    file = sorted(file)
+
+
