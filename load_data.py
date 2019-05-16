@@ -88,7 +88,6 @@ if __name__ == '__main__':
 
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
-
     db = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP , transform=transform)
 
     N = len(np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str'))
