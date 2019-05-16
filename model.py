@@ -34,7 +34,7 @@ class C3D(torch.nn.Module):
         self.FC5 = torch.nn.Linear(4 * 3 * 3 * 128, 128)
         self.batch_normFC5 = torch.nn.BatchNorm1d(num_features=128)
         self.PReLu5 = torch.nn.PReLU()
-        self.FC6 = torch.nn.Linear(128, 1500)
+        self.FC6 = torch.nn.Linear(128, 1211)
 
     def forward(self, x):
         x = self.conv1_1(x)
