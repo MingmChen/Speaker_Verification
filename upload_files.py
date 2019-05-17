@@ -94,8 +94,6 @@ if __name__ == "__main__":
     # subprocess.Popen(copy_file_test)
 
 
-
-
     stop_request = compute.instances().stop(
         project='dt2119-speaker-verification',
         zone='us-east1-b',
