@@ -1,6 +1,6 @@
 import torchvision.transforms as transforms
 import torch.utils.data as data
-from Utils import *
+from utils import *
 
 # https://github.com/astorfi/3D-convolutional-speaker-recognition/blob/master/code/0-input/input_feature.py
 class AudioDataset(data.Dataset):
