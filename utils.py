@@ -3,7 +3,7 @@ import librosa
 import numpy as np
 import os
 import shutil
-import speechpy
+import speech_feature_extraction.speechpy as speech
 import constants as c
 from sklearn.utils import shuffle
 import torch.optim as optim
@@ -14,9 +14,28 @@ from torch.utils.data.sampler import SubsetRandomSampler
 np.random.seed(12345)
 
 
-def split_sets(dataset, validation_split=c.VALIDATION_SPLIT, shuffle_dataset=True, batch_size=c.BATCH_SIZE):
+def create_train_paths():
+    train_paths_origin = np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str')
+
+    indexed_labels = {}
+    path_list = []
+    for index, train in enumerate(train_paths_origin):
+        train = train[0:7]
+        path_list.append(train)
+        # print(train)
+
+    uniques = np.unique(list(path_list))
+
+    for index, train in enumerate(uniques):
+        indexed_labels[train] = index
+
+    np.save('labeled_indices', indexed_labels)
+
+
+def split_sets(dataset, validation_split=c.VALIDATION_SPLIT, shuffle_dataset=c.SHUFFLE_DATA, batch_size=c.BATCH_SIZE):
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
+
     split = int(np.floor(validation_split * dataset_size))
 
     if shuffle_dataset:
@@ -35,6 +54,7 @@ def split_sets(dataset, validation_split=c.VALIDATION_SPLIT, shuffle_dataset=Tru
 
     return train_loader, validation_loader
 
+
 def LossAndOptimizer(learning_rate, model):
     loss = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -46,6 +66,7 @@ def save_checkpoint(state, is_best, filename='checkpoint.pt'):
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, c.MODEL_DIR + '/model_best.pt')
+
 
 def calculate_accuracy(model, X, Y):
     oupt = model(X)
@@ -76,6 +97,7 @@ def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
     plt.legend(['train_accuracy', 'val_accuracy'])
     plt.grid()
     plt.savefig('final_accuracy.png')
+
 
 def save_file(path_to_file, file):
     torch.save(file, path_to_file)
@@ -279,7 +301,7 @@ class CMVN(object):
 
     def __call__(self, sample):
         feature, label = sample['feature'], sample['label']
-        feature = speechpy.processing.cmvn(feature, variance_normalization=True)
+        feature = speech.processing.cmvn(feature, variance_normalization=True)
         return {'feature': feature, 'label': label}
 
 
@@ -288,5 +310,3 @@ if __name__ == "__main__":
     file = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
 
     file = sorted(file)
-
-
