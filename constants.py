@@ -18,11 +18,13 @@ MAX_SEC = 10
 
 # Train split
 VALIDATION_SPLIT = 0.2
+SHUFFLE_DATA = True
 
 # Model training parameters
 MODEL_DIR = ROOT + '/Models'
 EPOCHS_PER_SAVE = 5
 BATCH_SIZE = 32
+BATCH_PER_LOG = 1
 N_EPOCHS = 1
 
 # Optimizer settings
