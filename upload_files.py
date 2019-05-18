@@ -73,41 +73,44 @@ if __name__ == "__main__":
     # main()
 
     credentials = GoogleCredentials.get_application_default()
-    compute = discovery.build('compute', 'v1', credentials=credentials)
+
+    compute = discovery.build(
+        'compute',
+        'v1',
+        credentials=credentials
+    )
 
     start_request = compute.instances().start(
         project='dt2119-speaker-verification',
-        zone='us-east1-b',
-        instance='test-instance'
+        zone='europe-west1-b',
+        instance='dt2119-speaker-verification-vm'
     )
     start_response = start_request.execute()
 
     wait_for_operation(
         compute=compute,
         project='dt2119-speaker-verification',
-        zone='us-east1-b',
+        zone='europe-west1-b',
         operation=start_response['name']
     )
 
-
-
     # subprocess.Popen(copy_file_test)
 
-
-    stop_request = compute.instances().stop(
-        project='dt2119-speaker-verification',
-        zone='us-east1-b',
-        instance='test-instance'
-    )
-
-    stop_response = stop_request.execute()
-
-    wait_for_operation(
-        compute=compute,
-        project='dt2119-speaker-verification',
-        zone='us-east1-b',
-        operation=stop_response['name']
-    )
-
-
-
+    #
+    # stop_request = compute.instances().stop(
+    #     project='dt2119-speaker-verification',
+    #     zone='us-east1-b',
+    #     instance='test-instance'
+    # )
+    #
+    # stop_response = stop_request.execute()
+    #
+    # wait_for_operation(
+    #     compute=compute,
+    #     project='dt2119-speaker-verification',
+    #     zone='us-east1-b',
+    #     operation=stop_response['name']
+    # )
+    #
+    #
+    #

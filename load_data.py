@@ -1,10 +1,12 @@
 import torchvision.transforms as transforms
 import torch.utils.data as data
 from utils import *
+from tqdm import tqdm
+import speech_feature_extraction.speechpy as speech
 
 # https://github.com/astorfi/3D-convolutional-speaker-recognition/blob/master/code/0-input/input_feature.py
 class AudioDataset(data.Dataset):
-    def __init__(self, files_path, audio_dir, transform=None):
+    def __init__(self, files_path, audio_dir, indexed_labels, transform=None):
         """
         :param files_path: Path to the .txt file which contains all the file_list
         :param audio_dir:  Directory with all the audio files.
@@ -13,6 +15,7 @@ class AudioDataset(data.Dataset):
         """
         self.audio_dir = audio_dir
         self.transform = transform
+        self.indexed = indexed_labels
 
         # Open the .txt file and create a list from each line.
         content = np.genfromtxt(files_path, dtype='str')
@@ -20,7 +23,6 @@ class AudioDataset(data.Dataset):
         list_files = []
         for x in content:
             sound_file_path = os.path.join(self.audio_dir, x)
-            # print(sound_file_path)
             try:
                 file_size = os.path.getsize(sound_file_path)
                 assert file_size > 1000, "Bad file!"
@@ -45,16 +47,16 @@ class AudioDataset(data.Dataset):
 
         signal = load_wav(sound_file_path)
 
-        frames = speechpy.processing.stack_frames(signal,
+        frames = speech.processing.stack_frames(signal,
                                                   sampling_frequency=c.SAMPLE_RATE,
                                                   frame_length=0.025,
                                                   frame_stride=0.01,
                                                   zero_padding=True)
 
-        # # Extracting power spectrum (choosing 3 seconds and elimination of DC)
-        power_spectrum = speechpy.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
+        # Extracting power spectrum (choosing 3 seconds and elimination of DC)
+        power_spectrum = speech.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
 
-        logenergy = speechpy.feature.lmfe(signal,
+        logenergy = speech.feature.lmfe(signal,
                                           sampling_frequency=c.SAMPLE_RATE,
                                           frame_length=c.FRAME_LEN,
                                           frame_stride=c.FRAME_STEP,
@@ -63,8 +65,8 @@ class AudioDataset(data.Dataset):
                                           )
 
         # Label extraction
-        # label = int(self.sound_files[idx][2:7])
         label = idx
+        label = self.indexed[self.sound_files[idx][0:7]]
         sample = {
             'feature': logenergy,
             'label': label
@@ -81,20 +83,31 @@ class AudioDataset(data.Dataset):
         return sample
 
 
-if __name__ == '__main__':
-    dirs = CopyDataFiles(n_samples=10)
 
+if __name__ == '__main__':
+
+    # dirs = CopyDataFiles(n_samples=400)
+
+    indexed_labels = np.load('labeled_indices.npy').item()
     cube = FeatureCube((80, 40, 20))
 
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
-    db = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP , transform=transform)
+    dataset = AudioDataset(c.DATA_ORIGIN + 'train_paths.txt', c.DATA_ORIGIN, indexed_labels, transform=None)
 
-    N = len(np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str'))
-    # print(N)
-    dataset = [db.__getitem__(idx)[0] for idx in range(N)]
-    labels = [db.__getitem__(idx)[1] for idx in range(N)]
+    N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))
 
-    data_point = db.__getitem__(0)[0]
+    content = np.genfromtxt(c.DATA_ORIGIN + 'samples_paths.txt', dtype='str')
 
-    print(data_point.shape)
+    yolo = []
+    for x in content:
+        print(x[3:7])
+        yolo.append(int(x[3:7]))
+
+    print('YOLO', len(np.unique(yolo)))
+
+    # dataset = [db.__getitem__(idx)[0] for idx in range(N)]
+
+    labels = [dataset.__getitem__(idx)[1] for idx in tqdm(range(N))]
+
+    print(len(np.unique(labels)))
