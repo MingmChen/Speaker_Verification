@@ -4,8 +4,6 @@ from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 from google.cloud import storage
 
-
-
 args = ['nohup', 'python', '-u', '/Users/polaras/PycharmProjects/Speech_recognition_Project/train.py',
         '>', 'log.txt', '&']
 
@@ -40,6 +38,40 @@ def main():
 # subprocess.Popen(copy_file_speech)
 # subprocess.Popen(stop_vm_speech)
 
+
+def start_speech_vm(compute):
+    start_request = compute.instances().start(
+        project='dt2119-speaker-verification',
+        zone='europe-west1-b',
+        instance='dt2119-speaker-verification-vm'
+    )
+    start_response = start_request.execute()
+
+    wait_for_operation(
+        compute=compute,
+        project='dt2119-speaker-verification',
+        zone='europe-west1-b',
+        operation=start_response['name']
+    )
+
+
+def stop_speech_vm(compute):
+    stop_request = compute.instances().stop(
+        project='dt2119-speaker-verification',
+        zone='europe-west1-b',
+        instance='dt2119-speaker-verification-vm'
+    )
+
+    stop_response = stop_request.execute()
+
+    wait_for_operation(
+        compute=compute,
+        project='dt2119-speaker-verification',
+        zone='europe-west1-b',
+        operation=stop_response['name']
+    )
+
+
 def wait_for_operation(compute, project, zone, operation):
     print('Waiting for operation to finish...')
     while True:
@@ -57,7 +89,6 @@ def wait_for_operation(compute, project, zone, operation):
         time.sleep(1)
 
 
-
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
     storage_client = storage.Client()
@@ -70,8 +101,6 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 
 
 if __name__ == "__main__":
-    # main()
-
     credentials = GoogleCredentials.get_application_default()
 
     compute = discovery.build(
@@ -80,37 +109,4 @@ if __name__ == "__main__":
         credentials=credentials
     )
 
-    start_request = compute.instances().start(
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
-        instance='dt2119-speaker-verification-vm'
-    )
-    start_response = start_request.execute()
-
-    wait_for_operation(
-        compute=compute,
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
-        operation=start_response['name']
-    )
-
-    # subprocess.Popen(copy_file_test)
-
-    #
-    # stop_request = compute.instances().stop(
-    #     project='dt2119-speaker-verification',
-    #     zone='us-east1-b',
-    #     instance='test-instance'
-    # )
-    #
-    # stop_response = stop_request.execute()
-    #
-    # wait_for_operation(
-    #     compute=compute,
-    #     project='dt2119-speaker-verification',
-    #     zone='us-east1-b',
-    #     operation=stop_response['name']
-    # )
-    #
-    #
-    #
+    # start_speech_vm(compute)

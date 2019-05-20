@@ -8,6 +8,7 @@ from load_data import AudioDataset
 import numpy as np
 
 
+
 def train_with_loader(train_loader, validation_loader, n_labels):
     model = C3D(n_labels)
 
@@ -33,6 +34,7 @@ def train_with_loader(train_loader, validation_loader, n_labels):
     train_acc = []
 
     train_best_accuracy = 0.0
+
     for epoch in range(n_epochs):
 
         train_running_loss = 0.0
@@ -44,8 +46,6 @@ def train_with_loader(train_loader, validation_loader, n_labels):
         scheduler.step()
 
         start = time.time()
-
-        i = 0
 
         for i, data in enumerate(train_loader, 1):
 
@@ -65,12 +65,17 @@ def train_with_loader(train_loader, validation_loader, n_labels):
             # Loss
             train_loss_ = loss_criterion(outputs, train_labels)
 
+            _, predictions = torch.max(outputs, dim=1)
+
+            correct_count = (predictions == train_labels).double().sum().item()
+            train_accuracy = float(correct_count) / c.BATCH_SIZE
+            # train_accuracy = calculate_accuracy(model, train_input, train_labels)
+
             # backward & optimization
             train_loss_.backward()
             optimizer.step()
 
             # best accuracy
-            train_accuracy = calculate_accuracy(model, train_input, train_labels)
             if train_accuracy > train_best_accuracy:
                 train_best_accuracy = train_accuracy
 
@@ -89,7 +94,7 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                     i,
                     len(train_loader),
                     train_running_loss / c.BATCH_PER_LOG,
-                    train_running_accuracy
+                    train_accuracy
                 ),
                     end=' ')
 
@@ -108,16 +113,21 @@ def train_with_loader(train_loader, validation_loader, n_labels):
             val_outputs = model(val_input)
 
             val_loss_ = loss_criterion(val_outputs, val_labels)
-            val_acc_ = calculate_accuracy(model, val_input, val_labels)
+            # val_acc_ = calculate_accuracy(model, val_input, val_labels)
+
+            _, predictions = torch.max(val_outputs, dim=1)
+            correct_count = (predictions == val_labels).double().sum().item()
+            val_acc_ = float(correct_count) / c.BATCH_SIZE
 
             val_running_loss += val_loss_.data.item()
             val_running_acc += val_acc_
 
-        train_loss.append(train_running_loss)
-        train_acc.append(train_running_accuracy)
 
-        val_loss.append(val_running_loss)
-        val_acc.append(val_running_acc)
+        train_loss.append(train_running_loss/c.BATCH_SIZE)
+        train_acc.append(float(100.0 * train_running_accuracy/len(train_loader)))
+
+        val_loss.append(val_running_loss/c.BATCH_SIZE)
+        val_acc.append(float(100.0 * val_running_acc / len(validation_loader)))
 
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
 
@@ -145,9 +155,9 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                 epoch + 1,
                 n_epochs,
                 train_running_loss / c.BATCH_SIZE,
-                train_running_accuracy,
+                float(100.0 * train_running_accuracy/len(train_loader)),
                 val_running_loss / c.BATCH_SIZE,
-                val_running_acc,
+                float(100.0 * val_running_acc / len(validation_loader)),
                 duration_estimate
             )
         )

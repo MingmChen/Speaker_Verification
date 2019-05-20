@@ -4,6 +4,7 @@ from utils import *
 from tqdm import tqdm
 import speech_feature_extraction.speechpy as speech
 
+
 # https://github.com/astorfi/3D-convolutional-speaker-recognition/blob/master/code/0-input/input_feature.py
 class AudioDataset(data.Dataset):
     def __init__(self, files_path, audio_dir, indexed_labels, transform=None):
@@ -47,25 +48,24 @@ class AudioDataset(data.Dataset):
 
         signal = load_wav(sound_file_path)
 
-        frames = speech.processing.stack_frames(signal,
-                                                  sampling_frequency=c.SAMPLE_RATE,
-                                                  frame_length=0.025,
-                                                  frame_stride=0.01,
-                                                  zero_padding=True)
-
-        # Extracting power spectrum (choosing 3 seconds and elimination of DC)
-        power_spectrum = speech.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
+        # frames = speech.processing.stack_frames(signal,
+        #                                         sampling_frequency=c.SAMPLE_RATE,
+        #                                         frame_length=0.025,
+        #                                         frame_stride=0.01,
+        #                                         zero_padding=True)
+        #
+        # # Extracting power spectrum (choosing 3 seconds and elimination of DC)
+        # power_spectrum = speech.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
 
         logenergy = speech.feature.lmfe(signal,
-                                          sampling_frequency=c.SAMPLE_RATE,
-                                          frame_length=c.FRAME_LEN,
-                                          frame_stride=c.FRAME_STEP,
-                                          num_filters=c.NUM_COEF,
-                                          fft_length=c.NUM_FFT
-                                          )
+                                        sampling_frequency=c.SAMPLE_RATE,
+                                        frame_length=c.FRAME_LEN,
+                                        frame_stride=c.FRAME_STEP,
+                                        num_filters=c.NUM_COEF,
+                                        fft_length=c.NUM_FFT
+                                        )
 
         # Label extraction
-        label = idx
         label = self.indexed[self.sound_files[idx][0:7]]
         sample = {
             'feature': logenergy,
@@ -83,12 +83,12 @@ class AudioDataset(data.Dataset):
         return sample
 
 
-
 if __name__ == '__main__':
 
     # dirs = CopyDataFiles(n_samples=400)
 
     indexed_labels = np.load('labeled_indices.npy').item()
+
     cube = FeatureCube((80, 40, 20))
 
     transform = transforms.Compose([CMVN(), cube, ToTensor()])

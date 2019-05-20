@@ -74,7 +74,7 @@ def calculate_accuracy(model, X, Y):
 
     num_correct = torch.sum(Y == arg_maxs)
     acc = (num_correct * 100.0 / len(Y))
-    return acc.item()  #
+    return acc.item()
 
 
 def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
@@ -289,6 +289,7 @@ class FeatureCube(object):
         # Get some random starting point for creation of the future cube of size (num_frames x num_coefficient x num_utterances)
         # Since we are doing random indexing, the data augmentation is done as well because in each iteration it returns another indexing!
         idx = np.random.randint(feature.shape[0] - self.num_frames, size=self.num_utterances)
+
         for num, index in enumerate(idx):
             feature_cube[num, :, :] = feature[index:index + self.num_frames, :]
 
@@ -306,7 +307,7 @@ class CMVN(object):
 
 
 if __name__ == "__main__":
-    # loader = CopyDataFiles()
-    file = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
-
-    file = sorted(file)
+    loader = CopyDataFiles(n_samples=10)
+    # file = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
+    #
+    # file = sorted(file)
