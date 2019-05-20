@@ -64,23 +64,28 @@ def train_with_loader(train_loader, validation_loader, n_labels):
 
             # Loss
             train_loss_ = loss_criterion(outputs, train_labels)
+            train_running_loss += train_loss_.data.item()
 
-            _, predictions = torch.max(outputs, dim=1)
-
-            correct_count = (predictions == train_labels).double().sum().item()
-            train_accuracy = float(correct_count) / c.BATCH_SIZE
+            # _, predictions = torch.max(outputs, dim=1)
+            #
+            # correct_count = (predictions == train_labels).double().sum().item()
+            # train_accuracy = float(correct_count) / c.BATCH_SIZE
             # train_accuracy = calculate_accuracy(model, train_input, train_labels)
 
             # backward & optimization
             train_loss_.backward()
             optimizer.step()
 
+            _, predictions = torch.max(outputs, dim=1).detach()
+            correct_count = (predictions == train_labels).double().sum().item()
+            train_accuracy = float(correct_count) / c.BATCH_SIZE
+
             # best accuracy
             if train_accuracy > train_best_accuracy:
                 train_best_accuracy = train_accuracy
 
             # adding to loss for the batch
-            train_running_loss += train_loss_.data.item()
+            # train_running_loss += train_loss_.data.item()
             train_running_accuracy += train_accuracy
 
             # Print stats every 5 batches
@@ -93,8 +98,8 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                     epoch + 1,
                     i,
                     len(train_loader),
-                    train_running_loss / c.BATCH_PER_LOG,
-                    train_accuracy
+                    train_running_loss / i,#c.BATCH_PER_LOG,
+                    train_running_accuracy / i#train_accuracy
                 ),
                     end=' ')
 
@@ -102,6 +107,7 @@ def train_with_loader(train_loader, validation_loader, n_labels):
         duration_estimate = end - start
 
         # Get the validation loss and accuracy
+        model.eval()
         for i, data in enumerate(validation_loader, 1):
 
             val_input, val_labels = data
@@ -121,12 +127,13 @@ def train_with_loader(train_loader, validation_loader, n_labels):
 
             val_running_loss += val_loss_.data.item()
             val_running_acc += val_acc_
+        model.train()
 
 
-        train_loss.append(train_running_loss/c.BATCH_SIZE)
+        train_loss.append(train_running_loss/len(train_loader))#c.BATCH_SIZE)
         train_acc.append(float(100.0 * train_running_accuracy/len(train_loader)))
 
-        val_loss.append(val_running_loss/c.BATCH_SIZE)
+        val_loss.append(val_running_loss/len(validation_loader))#c.BATCH_SIZE)
         val_acc.append(float(100.0 * val_running_acc / len(validation_loader)))
 
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
@@ -154,9 +161,9 @@ def train_with_loader(train_loader, validation_loader, n_labels):
             "Val Loss: {:.4f}, Val Accuracy: {:.4f}, Time: {:.4f}".format(
                 epoch + 1,
                 n_epochs,
-                train_running_loss / c.BATCH_SIZE,
+                train_running_loss / len(train_loader),#c.BATCH_SIZE,
                 float(100.0 * train_running_accuracy/len(train_loader)),
-                val_running_loss / c.BATCH_SIZE,
+                val_running_loss / len(validation_loader),#c.BATCH_SIZE,
                 float(100.0 * val_running_acc / len(validation_loader)),
                 duration_estimate
             )
