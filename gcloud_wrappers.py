@@ -110,3 +110,4 @@ if __name__ == "__main__":
     )
 
     # start_speech_vm(compute)
+    # stop_speech_vm(compute)

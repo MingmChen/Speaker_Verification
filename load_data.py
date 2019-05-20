@@ -38,7 +38,7 @@ class AudioDataset(data.Dataset):
                 print('file %s is corrupted!' % sound_file_path)
 
         # Save the correct files
-        self.sound_files = list_files
+        self.sound_files = list_files[:c.NUM_FILES]
 
     def __len__(self):
         return len(self.sound_files)

@@ -4,7 +4,7 @@ import os
 ROOT = os.path.abspath(os.path.dirname(__file__))
 DATA_TEMP = os.path.join(ROOT, 'data_temp/')
 
-DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
+DATA_ORIGIN = '/home/polaras/dataset/data_original/'
 
 # Signal processing
 SAMPLE_RATE = 16000
@@ -22,10 +22,10 @@ SHUFFLE_DATA = True
 
 # Model training parameters
 MODEL_DIR = ROOT + '/Models'
-EPOCHS_PER_SAVE = 5
+EPOCHS_PER_SAVE = 3
 BATCH_SIZE = 32
 BATCH_PER_LOG = 10
-N_EPOCHS = 50
+N_EPOCHS = 5
 
 # Optimizer settings
 LEARNING_RATE = 0.01
@@ -37,3 +37,4 @@ STEP_SIZE = 450
 GAMMA = 0.1
 
 CUBE_SHAPE = (80, 40, 20)
+NUM_FILES = 200
