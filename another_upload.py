@@ -33,4 +33,8 @@ def move_files_for_upload():
 
 
 if __name__ == '__main__':
-    move_files_for_upload()
+    # move_files_for_upload(
+    with open('paths.txt') as f:
+        files_paths = f.read().splitlines()
+
+

@@ -20,7 +20,7 @@ class AudioDataset(data.Dataset):
 
         # Open the .txt file and create a list from each line.
         content = np.genfromtxt(files_path, dtype='str')
-
+        N = len(content)
         list_files = []
         for x in content:
             sound_file_path = os.path.join(self.audio_dir, x)
@@ -38,7 +38,10 @@ class AudioDataset(data.Dataset):
                 print('file %s is corrupted!' % sound_file_path)
 
         # Save the correct files
-        self.sound_files = list_files[:c.NUM_FILES]
+        if c.NUM_FILES == 0:
+            self.sound_files = list_files[:N]
+        else:
+            self.sound_files = list_files[:c.NUM_FILES]
 
     def __len__(self):
         return len(self.sound_files)
@@ -85,7 +88,7 @@ class AudioDataset(data.Dataset):
 
 if __name__ == '__main__':
 
-    # dirs = CopyDataFiles(n_samples=400)
+    dirs = CopyDataFiles(n_samples=5)
 
     indexed_labels = np.load('labeled_indices.npy').item()
 
@@ -93,18 +96,11 @@ if __name__ == '__main__':
 
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
-    dataset = AudioDataset(c.DATA_ORIGIN + 'train_paths.txt', c.DATA_ORIGIN, indexed_labels, transform=None)
+    dataset = AudioDataset(c.DATA_TEMP + 'samples_paths.txt', c.DATA_TEMP, indexed_labels, transform=transform)
 
-    N = len(np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str'))
+    N = len(np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str'))
 
-    content = np.genfromtxt(c.DATA_ORIGIN + 'samples_paths.txt', dtype='str')
-
-    yolo = []
-    for x in content:
-        print(x[3:7])
-        yolo.append(int(x[3:7]))
-
-    print('YOLO', len(np.unique(yolo)))
+    content = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
 
     # dataset = [db.__getitem__(idx)[0] for idx in range(N)]
 

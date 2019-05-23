@@ -1,3 +1,4 @@
+import torch.nn.init as init
 from model import C3D
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
@@ -8,9 +9,32 @@ from load_data import AudioDataset
 import numpy as np
 
 
+def xavier(param):
+    init.xavier_uniform(param)
 
-def train_with_loader(train_loader, validation_loader, n_labels):
+
+# Initializer function
+def weights_init(m):
+    """
+    Different type of initialization have been used for conv and fc layers.
+    :param m: layer
+    :return: Initialized layer. Return occurs in-place.
+    """
+    if isinstance(m, torch.nn.Conv3d):
+        xavier(m.weight.data)
+        m.bias.data.zero_()
+    elif isinstance(m, torch.nn.Linear):
+        size = m.weight.size()
+        fan_out = size[0]  # number of rows
+        fan_in = size[1]  # number of columns
+        variance = np.sqrt(2.0 / (fan_in + fan_out))
+        m.weight.data.normal_(0.0, variance)
+
+
+def train_with_loader(train_loader, n_labels, validation_loader=None):
     model = C3D(n_labels)
+
+    model.apply(weights_init)
 
     if torch.cuda.is_available():
         model.cuda()
@@ -29,8 +53,7 @@ def train_with_loader(train_loader, validation_loader, n_labels):
     n_epochs = c.N_EPOCHS
 
     train_loss = []
-    val_loss = []
-    val_acc = []
+
     train_acc = []
 
     train_best_accuracy = 0.0
@@ -39,8 +62,6 @@ def train_with_loader(train_loader, validation_loader, n_labels):
 
         train_running_loss = 0.0
         train_running_accuracy = 0.0
-        val_running_loss = 0.0
-        val_running_acc = 0.0
 
         # Step the lr scheduler each epoch!
         scheduler.step()
@@ -64,19 +85,15 @@ def train_with_loader(train_loader, validation_loader, n_labels):
 
             # Loss
             train_loss_ = loss_criterion(outputs, train_labels)
-            train_running_loss += train_loss_.data.item()
 
-            # _, predictions = torch.max(outputs, dim=1)
-            #
-            # correct_count = (predictions == train_labels).double().sum().item()
-            # train_accuracy = float(correct_count) / c.BATCH_SIZE
             # train_accuracy = calculate_accuracy(model, train_input, train_labels)
 
             # backward & optimization
             train_loss_.backward()
             optimizer.step()
+            train_running_loss += train_loss_.data.item()
 
-            _, predictions = torch.max(outputs, dim=1).detach()
+            _, predictions = torch.max(outputs, dim=1)
             correct_count = (predictions == train_labels).double().sum().item()
             train_accuracy = float(correct_count) / c.BATCH_SIZE
 
@@ -93,48 +110,27 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                 print((
                         'epoch {:2d} ' +
                         '|| batch {:2d} of {:2d} ||' +
-                        ' Batch-Loss: {:.4f} ||' +
+                        ' Batch-Loss: {:.8f} ||' +
                         ' Batch-Accuracy: {:.4f}\n').format(
                     epoch + 1,
                     i,
                     len(train_loader),
-                    train_running_loss / i,#c.BATCH_PER_LOG,
-                    train_running_accuracy / i#train_accuracy
+                    train_running_loss / c.BATCH_PER_LOG,
+                    train_accuracy  # train_accuracy
                 ),
-                    end=' ')
+                    end='')
+                train_running_loss = 0.0
 
         end = time.time()
         duration_estimate = end - start
 
-        # Get the validation loss and accuracy
-        model.eval()
-        for i, data in enumerate(validation_loader, 1):
-
-            val_input, val_labels = data
-            if torch.cuda.is_available():
-                val_input, val_labels = Variable(val_input.cuda()), Variable(val_labels.cuda())
-            else:
-                val_input, val_labels = Variable(val_input), Variable(val_labels)
-
-            val_outputs = model(val_input)
-
-            val_loss_ = loss_criterion(val_outputs, val_labels)
-            # val_acc_ = calculate_accuracy(model, val_input, val_labels)
-
-            _, predictions = torch.max(val_outputs, dim=1)
-            correct_count = (predictions == val_labels).double().sum().item()
-            val_acc_ = float(correct_count) / c.BATCH_SIZE
-
-            val_running_loss += val_loss_.data.item()
-            val_running_acc += val_acc_
-        model.train()
+        # progress.update()
+        train_loss.append(train_running_loss / len(train_loader))  # c.BATCH_SIZE)
+        train_acc.append(float(100.0 * train_running_accuracy / len(train_loader)))
 
 
-        train_loss.append(train_running_loss/len(train_loader))#c.BATCH_SIZE)
-        train_acc.append(float(100.0 * train_running_accuracy/len(train_loader)))
-
-        val_loss.append(val_running_loss/len(validation_loader))#c.BATCH_SIZE)
-        val_acc.append(float(100.0 * val_running_acc / len(validation_loader)))
+        print('The averaged accuracy for each epoch: {:.4f}.\n'.format(
+            100.0 * train_running_accuracy / len(train_loader)), end='')
 
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
 
@@ -148,7 +144,7 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                     'best_accuracy': train_best_accuracy,
                     'optimizer': optimizer.state_dict(),
                 },
-                is_best=val_running_acc == train_best_accuracy,
+                is_best=train_running_accuracy == train_best_accuracy,
                 filename=os.path.join(
                     c.MODEL_DIR,
                     'saved_' +
@@ -156,35 +152,44 @@ def train_with_loader(train_loader, validation_loader, n_labels):
                 )
             )
 
-        print(
-            "epoch {:2d}/{:2d}, Train Loss: {:.4f}, Train Accuracy: {:.4f}, "
-            "Val Loss: {:.4f}, Val Accuracy: {:.4f}, Time: {:.4f}".format(
-                epoch + 1,
-                n_epochs,
-                train_running_loss / len(train_loader),#c.BATCH_SIZE,
-                float(100.0 * train_running_accuracy/len(train_loader)),
-                val_running_loss / len(validation_loader),#c.BATCH_SIZE,
-                float(100.0 * val_running_acc / len(validation_loader)),
-                duration_estimate
-            )
-        )
+        # print(
+        #     "epoch {:2d}/{:2d}, Train Loss: {:.8f}, Train Accuracy: {:.4f}, "
+        #     "Time: {:.4f}".format(
+        #         epoch + 1,
+        #         n_epochs,
+        #         train_running_loss / len(train_loader),  # c.BATCH_SIZE,
+        #         float(100.0 * train_running_accuracy / len(train_loader)),
+        #         duration_estimate
+        #     )
+        # )
 
-    plot_loss_acc(train_loss, train_acc, val_loss, val_acc)
+    plot_loss_acc(train_loss, train_acc)
 
 
 if __name__ == '__main__':
-    indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
+    if not os.path.exists(c.ROOT + '/500_first_ids.npy'):
+        indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
+        origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
+    else:
+        indexed_labels = np.load(c.ROOT + '/500_first_ids.npy').item()
+        origin_file_path = c.ROOT + '/500_first_ids.txt'
 
     cube = FeatureCube(c.CUBE_SHAPE)
-
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
     dataset = AudioDataset(
-        c.DATA_ORIGIN + 'train_paths.txt',
+        origin_file_path,
         c.DATA_ORIGIN + 'wav/',
         indexed_labels=indexed_labels,
         transform=transform)
 
-    train_loader, validation_loader = split_sets(dataset)
+    # train_loader, validation_loader = split_sets(dataset)
 
-    train_with_loader(train_loader, validation_loader, len(indexed_labels.keys()))
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    np.random.shuffle(indices)
+    train_sampler = SubsetRandomSampler(indices)
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
+                                               sampler=train_sampler)
+
+    train_with_loader(train_loader, len(indexed_labels.keys()))

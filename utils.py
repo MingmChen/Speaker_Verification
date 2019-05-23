@@ -14,8 +14,35 @@ from torch.utils.data.sampler import SubsetRandomSampler
 np.random.seed(12345)
 
 
-def create_train_paths():
+def create_N_first_train_paths(N):
+
     train_paths_origin = np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str')
+    path_list = []
+
+    train_ids = []
+    for index, train in enumerate(train_paths_origin):
+        train_id = train[0:7]
+        train_ids.append(train_id)
+        path_list.append(train)
+        # print(train)
+
+    uniques = np.unique(train_ids)
+    uni_500 = uniques[0:N]
+    final_trains = []
+
+    for id in uni_500:
+        ids = [v for i, v in enumerate(path_list) if id in v]
+        final_trains.extend(ids)
+
+    np.savetxt('{}_first_ids.txt'.format(N), final_trains, fmt='%s')
+    create_masked_indices('{}_first_ids.txt'.format(N))
+
+
+def create_masked_indices(file=None):
+    if file is None:
+        train_paths_origin = np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str')
+    else:
+        train_paths_origin = np.genfromtxt(c.ROOT +'/' + file, dtype='str')
 
     indexed_labels = {}
     path_list = []
@@ -29,7 +56,10 @@ def create_train_paths():
     for index, train in enumerate(uniques):
         indexed_labels[train] = index
 
-    np.save('labeled_indices', indexed_labels)
+    if file is None:
+        np.save('labeled_indices', indexed_labels)
+    else:
+        np.save(file[:-4], indexed_labels)
 
 
 def split_sets(dataset, validation_split=c.VALIDATION_SPLIT, shuffle_dataset=c.SHUFFLE_DATA, batch_size=c.BATCH_SIZE):
@@ -77,14 +107,13 @@ def calculate_accuracy(model, X, Y):
     return acc.item()
 
 
-def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
+def plot_loss_acc(train_loss, train_acc):
     fig = plt.figure()
     ax = fig.gca()
     plt.title('Loss')
     plt.plot(train_loss, color='r')
-    plt.plot(val_loss, color='g')
     plt.xlabel('Epochs')
-    plt.legend(['train_cost', 'val_cost'])
+    plt.legend(['train_cost'])
     plt.grid()
     plt.savefig('final_loss.png')
 
@@ -92,9 +121,8 @@ def plot_loss_acc(train_loss, train_acc, val_loss, val_acc):
     ax = fig.gca()
     plt.title('Accuracy')
     plt.plot(train_acc, color='r')
-    plt.plot(val_acc, color='g')
     plt.xlabel('Epochs')
-    plt.legend(['train_accuracy', 'val_accuracy'])
+    plt.legend(['train_accuracy'])
     plt.grid()
     plt.savefig('final_accuracy.png')
 
@@ -307,7 +335,8 @@ class CMVN(object):
 
 
 if __name__ == "__main__":
-    loader = CopyDataFiles(n_samples=10)
+    # loader = CopyDataFiles(n_samples=10)
     # file = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
     #
     # file = sorted(file)
+    create_N_first_train_paths(500)
