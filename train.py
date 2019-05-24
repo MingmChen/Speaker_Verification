@@ -131,7 +131,6 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
         train_loss.append(train_running_loss / len(train_loader))  # c.BATCH_SIZE)
         train_acc.append(float(100.0 * train_running_accuracy / len(train_loader)))
 
-
         print('The averaged accuracy for each epoch: {:.4f}.\n'.format(
             100.0 * train_running_accuracy / len(train_loader)), end='')
 
@@ -168,10 +167,9 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
     plot_loss_acc(train_loss, train_acc)
 
+
 def check_files_missing(origin_file_path):
-
     content = np.genfromtxt(origin_file_path, dtype='str')
-
 
     counter = 0
     list = []
@@ -179,7 +177,6 @@ def check_files_missing(origin_file_path):
         if not os.path.exists(os.path.join(c.DATA_ORIGIN + 'wav', file)):
             counter += 1
             list.append(file)
-
 
     print('non existing files : {}'.format(counter))
     print('non existing files list : {}'.format(list))
@@ -199,25 +196,34 @@ def main():
     check_files_missing(origin_file_path)
     # return
 
+    try:
 
-    dataset = AudioDataset(
-        origin_file_path,
-        c.DATA_ORIGIN + 'wav/',
-        indexed_labels=indexed_labels,
-        transform=transform)
+        dataset = AudioDataset(
+            origin_file_path,
+            c.DATA_ORIGIN + 'wav/',
+            indexed_labels=indexed_labels,
+            transform=transform)
 
-    # train_loader, validation_loader = split_sets(dataset)
+        # train_loader, validation_loader = split_sets(dataset)
 
-    dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    np.random.shuffle(indices)
-    train_sampler = SubsetRandomSampler(indices)
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
-                                               sampler=train_sampler)
+        dataset_size = len(dataset)
+        indices = list(range(dataset_size))
+        np.random.shuffle(indices)
+        train_sampler = SubsetRandomSampler(indices)
+        train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
+                                                   sampler=train_sampler)
 
-    train_with_loader(train_loader, len(indexed_labels.keys()))
+        train_with_loader(train_loader, len(indexed_labels.keys()))
 
+    except:
+        credentials = GoogleCredentials.get_application_default()
 
+        compute = discovery.build(
+            'compute',
+            'v1',
+            credentials=credentials
+        )
+        gcloud_wrappers.stop_speech_vm(compute)
 
     credentials = GoogleCredentials.get_application_default()
 
@@ -226,7 +232,8 @@ def main():
         'v1',
         credentials=credentials
     )
-    gcloud_wrappers.stop_vm_speech()
+    gcloud_wrappers.stop_speech_vm(compute)
+
 
 if __name__ == '__main__':
     main()
