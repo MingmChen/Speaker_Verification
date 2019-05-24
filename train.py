@@ -194,7 +194,7 @@ def main():
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
     check_files_missing(origin_file_path)
-    return
+    # return
 
 
     dataset = AudioDataset(
