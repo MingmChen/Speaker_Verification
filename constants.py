@@ -4,7 +4,8 @@ import os
 ROOT = os.path.abspath(os.path.dirname(__file__))
 DATA_TEMP = os.path.join(ROOT, 'data_temp/')
 
-DATA_ORIGIN = '/home/polaras/dataset/data_original/'
+# DATA_ORIGIN = '/home/polaras/dataset/data_original/'
+DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
 
 # Signal processing
 SAMPLE_RATE = 16000

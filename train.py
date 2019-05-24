@@ -165,8 +165,24 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
     plot_loss_acc(train_loss, train_acc)
 
+def check_files_missing(origin_file_path):
 
-if __name__ == '__main__':
+    content = np.genfromtxt(origin_file_path, dtype='str')
+
+
+    counter = 0
+    list = []
+    for file in content:
+        if not os.path.exists(os.path.join(c.DATA_ORIGIN + 'wav', file)):
+            counter += 1
+            list.append(file)
+
+
+    print('non existing files : {}'.format(counter))
+    print('non existing files list : {}'.format(list))
+
+
+def main():
     if not os.path.exists(c.ROOT + '/500_first_ids.npy'):
         indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
         origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
@@ -176,6 +192,10 @@ if __name__ == '__main__':
 
     cube = FeatureCube(c.CUBE_SHAPE)
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
+
+    check_files_missing(origin_file_path)
+    return
+
 
     dataset = AudioDataset(
         origin_file_path,
@@ -193,3 +213,7 @@ if __name__ == '__main__':
                                                sampler=train_sampler)
 
     train_with_loader(train_loader, len(indexed_labels.keys()))
+
+
+if __name__ == '__main__':
+    main()

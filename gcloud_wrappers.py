@@ -109,5 +109,5 @@ if __name__ == "__main__":
         credentials=credentials
     )
 
-    # start_speech_vm(compute)
-    stop_speech_vm(compute)
+    start_speech_vm(compute)
+    # stop_speech_vm(compute)
