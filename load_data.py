@@ -67,6 +67,11 @@ class AudioDataset(data.Dataset):
                                         num_filters=c.NUM_COEF,
                                         fft_length=c.NUM_FFT
                                         )
+        logenergy2 = np.array(logenergy)
+        if (logenergy2.shape[0] - 80) < 0:
+            print(logenergy2.shape)
+            print(logenergy2.shape[0] - 80)
+
 
         # Label extraction
         label = self.indexed[self.sound_files[idx][0:7]]
@@ -88,7 +93,7 @@ class AudioDataset(data.Dataset):
 
 if __name__ == '__main__':
 
-    dirs = CopyDataFiles(n_samples=5)
+    # dirs = CopyDataFiles(n_samples=5)
 
     indexed_labels = np.load('labeled_indices.npy').item()
 
@@ -102,7 +107,11 @@ if __name__ == '__main__':
 
     content = np.genfromtxt(c.DATA_TEMP + 'samples_paths.txt', dtype='str')
 
-    # dataset = [db.__getitem__(idx)[0] for idx in range(N)]
+    # dataset = [dataset.__getitem__(idx)[0] for idx in range(N)]
+    for idx in range(N):
+        if idx % 100 == 0:
+            print(idx)
+        dataset = dataset.__getitem__(idx)[0]
 
     labels = [dataset.__getitem__(idx)[1] for idx in tqdm(range(N))]
 
