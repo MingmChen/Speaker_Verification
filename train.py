@@ -1,6 +1,7 @@
 import torch.nn.init as init
-
 import gcloud_wrappers
+from oauth2client.client import GoogleCredentials
+from googleapiclient import discovery
 from model import C3D
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
@@ -216,9 +217,7 @@ def main():
 
     train_with_loader(train_loader, len(indexed_labels.keys()))
 
-    import gcloud_wrappers
-    from oauth2client.client import GoogleCredentials
-    from googleapiclient import discovery
+
 
     credentials = GoogleCredentials.get_application_default()
 
