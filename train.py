@@ -13,7 +13,7 @@ import numpy as np
 
 
 def xavier(param):
-    init.xavier_uniform(param)
+    init.xavier_uniform_(param)
 
 
 # Initializer function
@@ -60,15 +60,13 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
     train_acc = []
 
     train_best_accuracy = 0.0
-
     for epoch in range(n_epochs):
 
         train_running_loss = 0.0
         train_running_accuracy = 0.0
-
         # Step the lr scheduler each epoch!
         scheduler.step()
-
+        total_loss = 0
         start = time.time()
 
         for i, data in enumerate(train_loader, 1):
@@ -85,54 +83,39 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
             # forward
             outputs = model(train_input)
-
             # Loss
             train_loss_ = loss_criterion(outputs, train_labels)
-
-            # train_accuracy = calculate_accuracy(model, train_input, train_labels)
-
             # backward & optimization
             train_loss_.backward()
             optimizer.step()
-            train_running_loss += train_loss_.data.item()
+            train_running_loss += train_loss_.item()
 
-            _, predictions = torch.max(outputs, dim=1)
-            correct_count = (predictions == train_labels).double().sum().item()
-            train_accuracy = float(correct_count) / c.BATCH_SIZE
+            if i % c.BATCH_PER_LOG == 0:  # print every 2000 mini-batches
+                end = time.time()
+                total_time = end - start
+                print('[Epoch %d,Batch %d] loss: %.3f time: %.3f' %
+                      (epoch + 1, i, train_running_loss / c.BATCH_PER_LOG, total_time))
 
-            # best accuracy
-            if train_accuracy > train_best_accuracy:
-                train_best_accuracy = train_accuracy
-
-            # adding to loss for the batch
-            # train_running_loss += train_loss_.data.item()
-            train_running_accuracy += train_accuracy
-
-            # Print stats every 5 batches
-            if i % c.BATCH_PER_LOG == 0:
-                print((
-                        'epoch {:2d} ' +
-                        '|| batch {:2d} of {:2d} ||' +
-                        ' Batch-Loss: {:.8f} ||' +
-                        ' Batch-Accuracy: {:.4f}\n').format(
-                    epoch + 1,
-                    i,
-                    len(train_loader),
-                    train_running_loss / c.BATCH_PER_LOG,
-                    train_accuracy  # train_accuracy
-                ),
-                    end='')
+                total_loss += train_running_loss / c.BATCH_PER_LOG
                 train_running_loss = 0.0
 
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in train_loader:
+                images, labels = data
+                outputs = model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
         end = time.time()
-        duration_estimate = end - start
+        total_time = end - start
+        print('Accuracy of the network: %d %%, loss: %.5f for epoch %d time %d \n' % (
+            100 * correct / total, total_loss, epoch + 1, total_time))
 
-        # progress.update()
-        train_loss.append(train_running_loss / len(train_loader))  # c.BATCH_SIZE)
-        train_acc.append(float(100.0 * train_running_accuracy / len(train_loader)))
-
-        print('The averaged accuracy for each epoch: {:.4f}.\n'.format(
-            100.0 * train_running_accuracy / len(train_loader)), end='')
+        train_loss.append(total_loss)
+        train_acc.append(100 * correct / total)
 
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
 
@@ -154,16 +137,7 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
                 )
             )
 
-        # print(
-        #     "epoch {:2d}/{:2d}, Train Loss: {:.8f}, Train Accuracy: {:.4f}, "
-        #     "Time: {:.4f}".format(
-        #         epoch + 1,
-        #         n_epochs,
-        #         train_running_loss / len(train_loader),  # c.BATCH_SIZE,
-        #         float(100.0 * train_running_accuracy / len(train_loader)),
-        #         duration_estimate
-        #     )
-        # )
+
 
     plot_loss_acc(train_loss, train_acc)
 
@@ -174,7 +148,7 @@ def check_files_missing(origin_file_path):
     counter = 0
     list = []
     for file in content:
-        if not os.path.exists(os.path.join(c.DATA_ORIGIN + 'wav', file)):
+        if not os.path.exists(os.path.join(c.DATA_ORIGIN, file)):
             counter += 1
             list.append(file)
 
@@ -200,7 +174,7 @@ def main():
 
     dataset = AudioDataset(
         origin_file_path,
-        c.DATA_ORIGIN + 'wav/',
+        c.DATA_ORIGIN,
         indexed_labels=indexed_labels,
         transform=transform)
 
@@ -224,7 +198,7 @@ def main():
     #         credentials=credentials
     #     )
     #     gcloud_wrappers.stop_speech_vm(compute)
-    #
+
     # credentials = GoogleCredentials.get_application_default()
     #
     # compute = discovery.build(

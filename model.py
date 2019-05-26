@@ -1,10 +1,111 @@
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 
-class C3D(torch.nn.Module):
-    def __init__(self, n_labels):
+class C3D(nn.Module):
+    def __init__(self,n_labels):
         super(C3D, self).__init__()
+
+        ################
+        ### Method 1 ###
+        ################
+        self.conv11 = nn.Conv3d(1, 16, (4, 9, 9), stride=(1, 2, 1))
+        self.conv11_bn = nn.BatchNorm3d(16)
+        self.conv11_activation = torch.nn.PReLU()
+        self.conv12 = nn.Conv3d(16, 16, (4, 9, 9), stride=(1, 1, 1))
+        self.conv12_bn = nn.BatchNorm3d(16)
+        self.conv12_activation = torch.nn.PReLU()
+        self.conv21 = nn.Conv3d(16, 32, (3, 7, 7), stride=(1, 1, 1))
+        self.conv21_bn = nn.BatchNorm3d(32)
+        self.conv21_activation = torch.nn.PReLU()
+        self.conv22 = nn.Conv3d(32, 32, (3, 7, 7), stride=(1, 1, 1))
+        self.conv22_bn = nn.BatchNorm3d(32)
+        self.conv22_activation = torch.nn.PReLU()
+        self.conv31 = nn.Conv3d(32, 64, (3, 5, 5), stride=(1, 1, 1))
+        self.conv31_bn = nn.BatchNorm3d(64)
+        self.conv31_activation = torch.nn.PReLU()
+        self.conv32 = nn.Conv3d(64, 64, (3, 5, 5), stride=(1, 1, 1))
+        self.conv32_bn = nn.BatchNorm3d(64)
+        self.conv32_activation = torch.nn.PReLU()
+        self.conv41 = nn.Conv3d(64, 128, (3, 3, 3), stride=(1, 1, 1))
+        self.conv41_bn = nn.BatchNorm3d(128)
+        self.conv41_activation = torch.nn.PReLU()
+
+
+
+        # Fully-connected
+        self.fc1 = nn.Linear(128 * 4 * 6 * 2, 128)
+        self.fc1_bn = nn.BatchNorm1d(128)
+        self.fc1_activation = torch.nn.PReLU()
+        self.fc2 = nn.Linear(128, n_labels)
+
+
+        # ################
+        # ### Method 2 ###
+        # ################
+        # self.cnn = nn.Sequential(
+        #      nn.Conv3d(1, 16, (4, 9, 9), stride=(1, 2, 1)),
+        #      nn.BatchNorm3d(16),
+        #      nn.ReLU(),
+        #      nn.Conv3d(16, 16, (4, 9, 9), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(16),
+        #      nn.ReLU(),
+        #      nn.Conv3d(16, 32, (3, 7, 7), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(32),
+        #      nn.ReLU(),
+        #      nn.Conv3d(32, 32, (3, 7, 7), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(32),
+        #      nn.ReLU(),
+        #      nn.Conv3d(32, 64, (3, 5, 5), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(64),
+        #      nn.ReLU(),
+        #      nn.Conv3d(64, 64, (3, 5, 5), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(64),
+        #      nn.ReLU(),
+        #      nn.Conv3d(64, 128, (3, 3, 3), stride=(1, 1, 1)),
+        #      nn.BatchNorm3d(128),
+        #      nn.ReLU(),
+        # )
+        #
+        # self.fc = nn.Sequential(
+        #      nn.Linear(128 * 4 * 6 * 2, 512),
+        #      nn.BatchNorm1d(512),
+        #      nn.ReLU(),
+        #      nn.Linear(512, 1211),
+        # )
+
+    def features(self, x):
+        # Method-1
+        x = self.conv11_activation(self.conv11_bn(self.conv11(x)))
+        x = self.conv12_activation(self.conv12_bn(self.conv12(x)))
+        x = self.conv21_activation(self.conv21_bn(self.conv21(x)))
+        x = self.conv22_activation(self.conv22_bn(self.conv22(x)))
+        x = self.conv31_activation(self.conv31_bn(self.conv31(x)))
+        x = self.conv32_activation(self.conv32_bn(self.conv32(x)))
+        x = self.conv41_activation(self.conv41_bn(self.conv41(x)))
+        x = x.view(-1, 128 * 4 * 6 * 2)
+        x = self.fc1_bn(self.fc1(x))
+        x = torch.nn.functional.normalize(x, p=2, dim=1, eps=1e-12)
+
+        # # Method Sequential
+        # x = self.cnn(x)
+        # x = x.view(-1, 128 * 4 * 6 * 2)
+        # x = self.fc(x)
+
+        return x
+
+    def forward(self, x):
+        # Method-1
+        x = self.features(x)
+        x = self.fc1_activation(x)
+        x = self.fc2(x)
+
+        return x
+
+class C3D2(torch.nn.Module):
+    def __init__(self, n_labels):
+        super(C3D2, self).__init__()
         self.conv1_1 = torch.nn.Conv3d(1, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1))
         self.batch_norm1_1 = torch.nn.BatchNorm3d(num_features=16)
         self.PReLu1_1 = torch.nn.PReLU()
