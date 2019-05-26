@@ -183,12 +183,12 @@ def check_files_missing(origin_file_path):
 
 
 def main():
-    if not os.path.exists(c.ROOT + '/500_first_ids.npy'):
+    if not os.path.exists(c.ROOT + '/50_first_ids.npy'):
         indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
         origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
     else:
-        indexed_labels = np.load(c.ROOT + '/500_first_ids.npy').item()
-        origin_file_path = c.ROOT + '/500_first_ids.txt'
+        indexed_labels = np.load(c.ROOT + '/50_first_ids.npy').item()
+        origin_file_path = c.ROOT + '/50_first_ids.txt'
 
     cube = FeatureCube(c.CUBE_SHAPE)
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
@@ -196,43 +196,43 @@ def main():
     check_files_missing(origin_file_path)
     # return
 
-    try:
+    # try:
 
-        dataset = AudioDataset(
-            origin_file_path,
-            c.DATA_ORIGIN + 'wav/',
-            indexed_labels=indexed_labels,
-            transform=transform)
+    dataset = AudioDataset(
+        origin_file_path,
+        c.DATA_ORIGIN + 'wav/',
+        indexed_labels=indexed_labels,
+        transform=transform)
 
-        # train_loader, validation_loader = split_sets(dataset)
+    # train_loader, validation_loader = split_sets(dataset)
 
-        dataset_size = len(dataset)
-        indices = list(range(dataset_size))
-        np.random.shuffle(indices)
-        train_sampler = SubsetRandomSampler(indices)
-        train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
-                                                   sampler=train_sampler)
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    np.random.shuffle(indices)
+    train_sampler = SubsetRandomSampler(indices)
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
+                                               sampler=train_sampler)
 
-        train_with_loader(train_loader, len(indexed_labels.keys()))
+    train_with_loader(train_loader, len(indexed_labels.keys()))
 
-    except:
-        credentials = GoogleCredentials.get_application_default()
-
-        compute = discovery.build(
-            'compute',
-            'v1',
-            credentials=credentials
-        )
-        gcloud_wrappers.stop_speech_vm(compute)
-
-    credentials = GoogleCredentials.get_application_default()
-
-    compute = discovery.build(
-        'compute',
-        'v1',
-        credentials=credentials
-    )
-    gcloud_wrappers.stop_speech_vm(compute)
+    # except:
+    #     credentials = GoogleCredentials.get_application_default()
+    #
+    #     compute = discovery.build(
+    #         'compute',
+    #         'v1',
+    #         credentials=credentials
+    #     )
+    #     gcloud_wrappers.stop_speech_vm(compute)
+    #
+    # credentials = GoogleCredentials.get_application_default()
+    #
+    # compute = discovery.build(
+    #     'compute',
+    #     'v1',
+    #     credentials=credentials
+    # )
+    # gcloud_wrappers.stop_speech_vm(compute)
 
 
 if __name__ == '__main__':
