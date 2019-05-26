@@ -2,7 +2,7 @@ import subprocess
 import time
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
-from google.cloud import storage
+# from google.cloud import storage
 
 args = ['nohup', 'python', '-u', '/Users/polaras/PycharmProjects/Speech_recognition_Project/train.py',
         '>', 'log.txt', '&']
@@ -89,15 +89,15 @@ def wait_for_operation(compute, project, zone, operation):
         time.sleep(1)
 
 
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(source_file_name)
-    print('File {} uploaded to {}.'.format(
-        source_file_name,
-        destination_blob_name))
+# def upload_blob(bucket_name, source_file_name, destination_blob_name):
+#     """Uploads a file to the bucket."""
+#     storage_client = storage.Client()
+#     bucket = storage_client.get_bucket(bucket_name)
+#     blob = bucket.blob(destination_blob_name)
+#     blob.upload_from_filename(source_file_name)
+#     print('File {} uploaded to {}.'.format(
+#         source_file_name,
+#         destination_blob_name))
 
 
 if __name__ == "__main__":
