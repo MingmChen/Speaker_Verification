@@ -36218,7 +36218,6 @@ id10343/Wy8sFgdylRc/00057.wav
 id10343/Wy8sFgdylRc/00069.wav
 id10343/Wy8sFgdylRc/00041.wav
 id10343/Wy8sFgdylRc/00055.wav
-id10343/Wy8sFgdylRc/00082.wav
 id10343/Wy8sFgdylRc/00096.wav
 id10343/Wy8sFgdylRc/00109.wav
 id10343/Wy8sFgdylRc/00121.wav
