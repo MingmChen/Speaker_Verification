@@ -1,7 +1,7 @@
 import torch.nn.init as init
-import gcloud_wrappers
-from oauth2client.client import GoogleCredentials
-from googleapiclient import discovery
+#import gcloud_wrappers
+#from oauth2client.client import GoogleCredentials
+#from googleapiclient import discovery
 from model import C3D
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
@@ -102,12 +102,16 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
         correct = 0
         total = 0
         with torch.no_grad():
+            model.eval()
             for data in train_loader:
                 images, labels = data
+                images = images.cuda()
+                labels = labels.cuda()
                 outputs = model(images)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
+            model.train()
 
         end = time.time()
         total_time = end - start
@@ -161,7 +165,7 @@ def main():
         indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
         origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
     else:
-        indexed_labels = np.load(c.ROOT + '/50_first_ids.npy').item()
+        indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
         origin_file_path = c.ROOT + '/50_first_ids.txt'
 
     cube = FeatureCube(c.CUBE_SHAPE)
