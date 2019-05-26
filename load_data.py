@@ -2,7 +2,7 @@ import torchvision.transforms as transforms
 import torch.utils.data as data
 from utils import *
 from tqdm import tqdm
-import speech_feature_extraction.speechpy as speech
+import speech_feature_extraction.speechpy.feature as speech
 
 
 # https://github.com/astorfi/3D-convolutional-speaker-recognition/blob/master/code/0-input/input_feature.py
@@ -60,7 +60,7 @@ class AudioDataset(data.Dataset):
         # # Extracting power spectrum (choosing 3 seconds and elimination of DC)
         # power_spectrum = speech.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
 
-        logenergy = speech.feature.lmfe(signal,
+        logenergy = speech.lmfe(signal,
                                         sampling_frequency=c.SAMPLE_RATE,
                                         frame_length=c.FRAME_LEN,
                                         frame_stride=c.FRAME_STEP,
