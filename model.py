@@ -62,7 +62,7 @@ class C3D(torch.nn.Module):
 
         self.batch_normFC5 = torch.nn.BatchNorm1d(num_features=128)
         self.PReLu5 = torch.nn.PReLU()
-        
+
         self.FC6 = torch.nn.Linear(128, n_labels)
 
     def forward(self, x):
@@ -99,3 +99,10 @@ class C3D(torch.nn.Module):
         x = self.FC6(x)
         x = F.softmax(x, dim=1)
         return x
+
+
+if __name__ == "__main__":
+    model = C3D(50)
+    model.eval()
+    x = torch.rand((1, 1, 20, 80, 40))
+    x = model(x)
