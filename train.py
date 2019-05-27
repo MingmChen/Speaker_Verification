@@ -2,7 +2,7 @@ import torch.nn.init as init
 #import gcloud_wrappers
 #from oauth2client.client import GoogleCredentials
 #from googleapiclient import discovery
-from model import C3D
+from model import C3D, C3D2
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.autograd import Variable
@@ -35,7 +35,7 @@ def weights_init(m):
 
 
 def train_with_loader(train_loader, n_labels, validation_loader=None):
-    model = C3D(n_labels)
+    model = C3D2(n_labels)
 
     model.apply(weights_init)
 
@@ -161,12 +161,12 @@ def check_files_missing(origin_file_path):
 
 
 def main():
-    if not os.path.exists(c.ROOT + '/50_first_ids.npy'):
+    if not os.path.exists(c.ROOT + '/100_first_ids.npy'):
         indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
         origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
     else:
-        indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
-        origin_file_path = c.ROOT + '/50_first_ids.txt'
+        indexed_labels = np.load(c.ROOT + '/100_first_ids.npy', allow_pickle=True).item()
+        origin_file_path = c.ROOT + '/100_first_ids.txt'
 
     cube = FeatureCube(c.CUBE_SHAPE)
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
@@ -203,14 +203,14 @@ def main():
     #     )
     #     gcloud_wrappers.stop_speech_vm(compute)
 
-    # credentials = GoogleCredentials.get_application_default()
-    #
-    # compute = discovery.build(
-    #     'compute',
-    #     'v1',
-    #     credentials=credentials
-    # )
-    # gcloud_wrappers.stop_speech_vm(compute)
+    credentials = GoogleCredentials.get_application_default()
+    
+    compute = discovery.build(
+        'compute',
+        'v1',
+        credentials=credentials
+    )
+    gcloud_wrappers.stop_speech_vm(compute)
 
 
 if __name__ == '__main__':
