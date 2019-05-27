@@ -127,6 +127,10 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
         train_acc.append(100 * correct / total)
 
         if best_accuracy < 100 * correct / total:
+
+            if not os.path.exists(c.MODEL_DIR):
+                os.mkdir(c.MODEL_DIR)
+
             best_accuracy = 100 * correct / total
             save_checkpoint(
                 {
