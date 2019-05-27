@@ -10,8 +10,8 @@ DATA_TEMP = os.path.join(ROOT, 'data_temp/')
 DATA_ORIGIN = os.path.join(ROOT, 'data_temp_small/')
 
 # Signal processing
-DERIVATIVE = True
-NORMALIZE = True
+DERIVATIVE = False
+NORMALIZE = False
 SAMPLE_RATE = 16000
 FRAME_LEN = 0.025
 FRAME_STEP = 0.01
@@ -25,13 +25,13 @@ SHUFFLE_DATA = True
 # Model training parameters
 
 MODEL_DIR = ROOT + '/Models'
-EPOCHS_PER_SAVE = 50
+EPOCHS_PER_SAVE = 10
 BATCH_SIZE = 32
-BATCH_PER_LOG = 1
-N_EPOCHS = 50
+BATCH_PER_LOG = 10
+N_EPOCHS = 250
 
 # Optimizer settings
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.05
 MOMENTUM = 0.9
 WEIGHT_DECAY = 5e-4
 
