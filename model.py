@@ -184,20 +184,20 @@ class CNN3D3(nn.Module):
 
     def __init__(self, num_classes):
         super(CNN3D3, self).__init__()
-        self.conv1_1 = nn.Conv3d(1, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1), padding=0, bias=False)
-        self.conv1_2 = nn.Conv3d(16, 16, kernel_size=(3, 9, 1), stride=(1, 2, 1), padding=0, bias=False)
+        self.conv1_1 = nn.Conv3d(1, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1), padding=0)
+        self.conv1_2 = nn.Conv3d(16, 16, kernel_size=(3, 9, 1), stride=(1, 2, 1), padding=0, bias=True)
         self.bn1 = nn.BatchNorm3d(16)
 
-        self.conv2_1 = nn.Conv3d(16, 32, kernel_size=(3, 1, 4), stride=(1, 1, 1), padding=0, bias=False)
-        self.conv2_2 = nn.Conv3d(32, 32, kernel_size=(3, 8, 1), stride=(1, 2, 1), padding=0, bias=False)
+        self.conv2_1 = nn.Conv3d(16, 32, kernel_size=(3, 1, 4), stride=(1, 1, 1), padding=0, bias=True)
+        self.conv2_2 = nn.Conv3d(32, 32, kernel_size=(3, 8, 1), stride=(1, 2, 1), padding=0, bias=True)
         self.bn2 = nn.BatchNorm3d(32)
 
-        self.conv3_1 = nn.Conv3d(32, 64, kernel_size=(3, 1, 3), stride=(1, 1, 1), padding=0, bias=False)
-        self.conv3_2 = nn.Conv3d(64, 64, kernel_size=(3, 7, 1), stride=(1, 1, 1), padding=0, bias=False)
+        self.conv3_1 = nn.Conv3d(32, 64, kernel_size=(3, 1, 3), stride=(1, 1, 1), padding=0, bias=True)
+        self.conv3_2 = nn.Conv3d(64, 64, kernel_size=(3, 7, 1), stride=(1, 1, 1), padding=0, bias=True)
         self.bn3 = nn.BatchNorm3d(64)
 
-        self.conv4_1 = nn.Conv3d(64, 128, kernel_size=(3, 1, 3), stride=(1, 1, 1), padding=0, bias=False)
-        self.conv4_2 = nn.Conv3d(128, 128, kernel_size=(3, 7, 1), stride=(1, 1, 1), padding=0, bias=False)
+        self.conv4_1 = nn.Conv3d(64, 128, kernel_size=(3, 1, 3), stride=(1, 1, 1), padding=0, bias=True)
+        self.conv4_2 = nn.Conv3d(128, 128, kernel_size=(3, 7, 1), stride=(1, 1, 1), padding=0, bias=True)
         self.bn4 = nn.BatchNorm3d(128)
 
         self.relu = nn.PReLU()
