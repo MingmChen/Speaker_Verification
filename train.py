@@ -4,7 +4,7 @@ import gcloud_wrappers
 from oauth2client.client import GoogleCredentials
 from googleapiclient import discovery
 import torchvision.transforms as transforms
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.autograd import Variable
 import time
 from utils import *
@@ -34,8 +34,8 @@ def weights_init(m):
         m.weight.data.normal_(0.0, variance)
 
 
-def train_with_loader(train_loader, n_labels, validation_loader=None):
-    model = C3D2(n_labels)
+def train_with_loader(train_loader, n_labels, num_channels):
+    model = C3D2(n_labels, num_channels)
 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
@@ -52,9 +52,10 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
     loss_criterion = torch.nn.CrossEntropyLoss()
 
-    scheduler = StepLR(optimizer,
-                       step_size=c.STEP_SIZE,
-                       gamma=c.GAMMA)
+    scheduler = CosineAnnealingLR(optimizer, T_max=10)
+    # scheduler = StepLR(optimizer,
+    #                    step_size=c.STEP_SIZE,
+    #                    gamma=c.GAMMA)
 
     n_epochs = c.N_EPOCHS
 
@@ -111,7 +112,7 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
                 if torch.cuda.is_available():
                     images = images.cuda()
                     labels = labels.cuda()
-                
+
                 outputs = model(images)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
@@ -130,7 +131,7 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
             if not os.path.exists(c.MODEL_DIR):
                 os.mkdir(c.MODEL_DIR)
-
+            print("\nBEST MODEL SO FAR")
             best_accuracy = 100 * correct / total
             save_checkpoint(
                 {
@@ -147,8 +148,6 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
                     str(epoch + 1) + '_model.pt'
                 )
             )
-
-
 
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
 
@@ -188,14 +187,23 @@ def check_files_missing(origin_file_path):
 
 
 def main():
-    if not os.path.exists(c.ROOT + '/100_first_ids.npy'):
+    if not os.path.exists(c.ROOT + '/50_first_ids.npy'):
         indexed_labels = np.load(c.ROOT + '/labeled_indices.npy').item()
         origin_file_path = c.DATA_ORIGIN + 'train_paths.txt'
     else:
-        indexed_labels = np.load(c.ROOT + '/100_first_ids.npy', allow_pickle=True).item()
-        origin_file_path = c.ROOT + '/100_first_ids.txt'
+        indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
+        origin_file_path = c.ROOT + '/50_first_ids.txt'
 
-    cube = FeatureCube(c.CUBE_SHAPE)
+    if c.DERIVATIVE:
+        num_channels = 3
+        cube_shape = (80, 40, 20, num_channels)
+        cube = FeatureCube3C(cube_shape)
+
+    else:
+        num_channels = 1
+        cube_shape = (80, 40, 20)
+        cube = FeatureCube(cube_shape)
+
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
     check_files_missing(origin_file_path)
@@ -214,30 +222,24 @@ def main():
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
     np.random.shuffle(indices)
-    train_sampler = SubsetRandomSampler(indices)
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=c.BATCH_SIZE,
-                                               sampler=train_sampler)
 
-    train_with_loader(train_loader, len(indexed_labels.keys()))
+    train_sampler = SubsetRandomSampler(indices)
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=c.BATCH_SIZE,
+        sampler=train_sampler
+    )
+
+    train_with_loader(
+        train_loader,
+        len(indexed_labels.keys()),
+        num_channels=num_channels
+    )
 
     # except:
-    #     credentials = GoogleCredentials.get_application_default()
-    #
-    #     compute = discovery.build(
-    #         'compute',
-    #         'v1',
-    #         credentials=credentials
-    #     )
-    #     gcloud_wrappers.stop_speech_vm(compute)
 
-    credentials = GoogleCredentials.get_application_default()
-    
-    compute = discovery.build(
-        'compute',
-        'v1',
-        credentials=credentials
-    )
-    gcloud_wrappers.stop_speech_vm(compute)
+    # gcloud_wrappers.stop_speech_vm()
 
 
 if __name__ == '__main__':

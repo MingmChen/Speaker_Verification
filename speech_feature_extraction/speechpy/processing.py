@@ -101,7 +101,7 @@ def stack_frames(
     if zero_padding:
         # Calculation of number of frames
         numframes = (int(math.ceil((length_signal
-                                      - frame_sample_length) / frame_stride)))
+                                    - frame_sample_length) / frame_stride)))
         # print(numframes,length_signal,frame_sample_length,frame_stride)
 
         # Zero padding
@@ -113,7 +113,7 @@ def stack_frames(
         # No zero padding! The last frame which does not have enough
         # samples(remaining samples <= frame_sample_length), will be dropped!
         numframes = int(math.floor((length_signal
-                          - frame_sample_length) / frame_stride))
+                                    - frame_sample_length) / frame_stride))
 
         # new length
         len_sig = int((numframes - 1) * frame_stride + frame_sample_length)
@@ -250,7 +250,7 @@ def cmvn(vec, variance_normalization=False):
     Return:
           array: The mean(or mean+variance) normalized feature vector.
     """
-    eps = 2**-30
+    eps = 2 ** -30
     rows, cols = vec.shape
 
     # Mean calculation
@@ -289,7 +289,7 @@ def cmvnw(vec, win_size=301, variance_normalization=False):
           array: The mean(or mean+variance) normalized feature vector.
     """
     # Get the shapes
-    eps = 2**-30
+    eps = 2 ** -30
     rows, cols = vec.shape
 
     # Windows size must be odd.
@@ -319,13 +319,12 @@ def cmvnw(vec, win_size=301, variance_normalization=False):
             window = vec_pad_variance[i:i + win_size, :]
             window_variance = np.std(window, axis=0)
             variance_normalized[i, :] \
-            = mean_subtracted[i, :] / (window_variance + eps)
+                = mean_subtracted[i, :] / (window_variance + eps)
         output = variance_normalized
     else:
         output = mean_subtracted
 
     return output
-
 
 # def resample_Fn(wave, fs, f_new=16000):
 #     """This function resample the data to arbitrary frequency

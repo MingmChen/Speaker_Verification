@@ -7,7 +7,7 @@ import speech_feature_extraction.speechpy.feature as speech
 
 # https://github.com/astorfi/3D-convolutional-speaker-recognition/blob/master/code/0-input/input_feature.py
 class AudioDataset(data.Dataset):
-    def __init__(self, files_path, audio_dir, indexed_labels, transform=None):
+    def __init__(self, files_path, audio_dir, indexed_labels, transform=None, derivative=c.DERIVATIVE):
         """
         :param files_path: Path to the .txt file which contains all the file_list
         :param audio_dir:  Directory with all the audio files.
@@ -17,6 +17,7 @@ class AudioDataset(data.Dataset):
         self.audio_dir = audio_dir
         self.transform = transform
         self.indexed = indexed_labels
+        self.derivative = derivative
 
         # Open the .txt file and create a list from each line.
         content = np.genfromtxt(files_path, dtype='str')
@@ -61,17 +62,12 @@ class AudioDataset(data.Dataset):
         # power_spectrum = speech.processing.power_spectrum(frames, fft_points=2 * c.NUM_COEF)[:, 1:]
 
         logenergy = speech.lmfe(signal,
-                                        sampling_frequency=c.SAMPLE_RATE,
-                                        frame_length=c.FRAME_LEN,
-                                        frame_stride=c.FRAME_STEP,
-                                        num_filters=c.NUM_COEF,
-                                        fft_length=c.NUM_FFT
-                                        )
-        logenergy2 = np.array(logenergy)
-        if (logenergy2.shape[0] - 80) < 0:
-            print(logenergy2.shape)
-            print(logenergy2.shape[0] - 80)
-
+                                sampling_frequency=c.SAMPLE_RATE,
+                                frame_length=c.FRAME_LEN,
+                                frame_stride=c.FRAME_STEP,
+                                num_filters=c.NUM_COEF,
+                                fft_length=c.NUM_FFT
+                                )
 
         # Label extraction
         label = self.indexed[self.sound_files[idx][0:7]]
