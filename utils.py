@@ -43,7 +43,7 @@ def create_N_first_train_paths(N):
 
         ids = [v for i, v in enumerate(path_list) if id in v]
         iddds = ids[0:min_length]
-        print(iddds)
+        print(len(iddds))
         final_trains.extend(iddds)
 
 
