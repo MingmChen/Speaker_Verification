@@ -13,7 +13,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 np.random.seed(12345)
 
-
+# with equal number of samples
 def create_N_first_train_paths(N):
 
     train_paths_origin = np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str')
@@ -30,9 +30,22 @@ def create_N_first_train_paths(N):
     uni_500 = uniques[0:N]
     final_trains = []
 
+    min_length = 100000
     for id in uni_500:
+
         ids = [v for i, v in enumerate(path_list) if id in v]
-        final_trains.extend(ids)
+        if len(ids) < min_length:
+            min_length = len(ids)
+
+        # final_trains.extend(ids)
+
+    for id in uni_500:
+
+        ids = [v for i, v in enumerate(path_list) if id in v]
+        iddds = ids[0:min_length]
+        print(iddds)
+        final_trains.extend(iddds)
+
 
     np.savetxt('{}_first_ids.txt'.format(N), final_trains, fmt='%s')
     create_masked_indices('{}_first_ids.txt'.format(N))
