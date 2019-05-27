@@ -6,7 +6,7 @@ from torch import nn
 class C3D(nn.Module):
     def __init__(self,n_labels):
         super(C3D, self).__init__()
-
+        print('their model')
         ################
         ### Method 1 ###
         ################
@@ -106,6 +106,9 @@ class C3D(nn.Module):
 class C3D2(torch.nn.Module):
     def __init__(self, n_labels):
         super(C3D2, self).__init__()
+
+        print('tasos model')
+
         self.conv1_1 = torch.nn.Conv3d(1, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1))
         self.batch_norm1_1 = torch.nn.BatchNorm3d(num_features=16)
         self.PReLu1_1 = torch.nn.PReLU()
@@ -133,7 +136,7 @@ class C3D2(torch.nn.Module):
         self.batch_norm4_2 = torch.nn.BatchNorm3d(num_features=128)
         self.PReLu4_2 = torch.nn.PReLU()
         self.FC5 = torch.nn.Linear(4 * 3 * 3 * 128, 128)
-        self.batch_normFC5 = torch.nn.BatchNorm1d(num_features=128)
+        # self.batch_normFC5 = torch.nn.BatchNorm1d(num_features=128)
         self.PReLu5 = torch.nn.PReLU()
         self.FC6 = torch.nn.Linear(128, n_labels)
 
@@ -166,7 +169,7 @@ class C3D2(torch.nn.Module):
         x = self.PReLu4_2(x)
         x = x.view(-1, 4 * 3 * 3 * 128)
         x = self.FC5(x)
-        x = self.batch_normFC5(x)
+        # x = self.batch_normFC5(x)
         x = self.PReLu5(x)
         x = self.FC6(x)
         x = F.softmax(x, dim=1)
