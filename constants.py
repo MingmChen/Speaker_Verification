@@ -7,7 +7,7 @@ DATA_TEMP = os.path.join(ROOT, 'data_temp/')
 
 # DATA_ORIGIN = '/home/polaras/dataset/data_original/'
 # DATA_ORIGIN = '/Users/polaras/Documents/Useful/dataset/data_original/'
-DATA_ORIGIN = os.path.join(ROOT, 'data_temp_small/')
+DATA_ORIGIN = os.path.join(ROOT, 'data_temp_small/wav/')
 
 # Signal processing
 SAMPLE_RATE = 16000
@@ -15,7 +15,7 @@ PREEMPHASIS_ALPHA = 0.97
 FRAME_LEN = 0.025
 FRAME_STEP = 0.01
 NUM_COEF = 40
-NUM_FFT = 512
+NUM_FFT = 256
 
 # Train split
 VALIDATION_SPLIT = 0.2
@@ -26,7 +26,7 @@ MODEL_DIR = ROOT + '/Models'
 EPOCHS_PER_SAVE = 50
 BATCH_SIZE = 32
 BATCH_PER_LOG = 1
-N_EPOCHS = 100
+N_EPOCHS = 3
 
 # Optimizer settings
 LEARNING_RATE = 0.1
