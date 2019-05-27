@@ -1,8 +1,8 @@
 import torch.nn.init as init
+from model import C3D, C3D2
 import gcloud_wrappers
 from oauth2client.client import GoogleCredentials
 from googleapiclient import discovery
-from model import C3D, C3D2
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.autograd import Variable
@@ -37,6 +37,9 @@ def weights_init(m):
 def train_with_loader(train_loader, n_labels, validation_loader=None):
     model = C3D2(n_labels)
 
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
+
     model.apply(weights_init)
 
     if torch.cuda.is_available():
@@ -59,11 +62,10 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
 
     train_acc = []
 
-    train_best_accuracy = 0.0
+    best_accuracy = 0.0
     for epoch in range(n_epochs):
 
         train_running_loss = 0.0
-        train_running_accuracy = 0.0
         # Step the lr scheduler each epoch!
         scheduler.step()
         total_loss = 0
@@ -104,9 +106,12 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
         with torch.no_grad():
             model.eval()
             for data in train_loader:
+
                 images, labels = data
-                images = images.cuda()
-                labels = labels.cuda()
+                if torch.cuda.is_available():
+                    images = images.cuda()
+                    labels = labels.cuda()
+                
                 outputs = model(images)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
@@ -121,6 +126,26 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
         train_loss.append(total_loss)
         train_acc.append(100 * correct / total)
 
+        if best_accuracy < 100 * correct / total:
+            best_accuracy = 100 * correct / total
+            save_checkpoint(
+                {
+
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict(),
+                    'accuracy': 100 * correct / total,
+                    'optimizer': optimizer.state_dict(),
+                },
+                is_best=100 * correct / total == best_accuracy,
+                filename=os.path.join(
+                    c.MODEL_DIR,
+                    'saved_' +
+                    str(epoch + 1) + '_model.pt'
+                )
+            )
+
+
+
         if int(epoch + 1) % c.EPOCHS_PER_SAVE == 0:
 
             if not os.path.exists(c.MODEL_DIR):
@@ -130,18 +155,16 @@ def train_with_loader(train_loader, n_labels, validation_loader=None):
                 {
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict(),
-                    'best_accuracy': train_best_accuracy,
+                    'accuracy': 100 * correct / total,
                     'optimizer': optimizer.state_dict(),
                 },
-                is_best=train_running_accuracy == train_best_accuracy,
+                is_best=100 * correct / total == best_accuracy,
                 filename=os.path.join(
                     c.MODEL_DIR,
                     'saved_' +
                     str(epoch + 1) + '_model.pt'
                 )
             )
-
-
 
     plot_loss_acc(train_loss, train_acc)
 
