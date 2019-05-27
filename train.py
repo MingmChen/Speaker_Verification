@@ -1,7 +1,7 @@
 import torch.nn.init as init
-#import gcloud_wrappers
-#from oauth2client.client import GoogleCredentials
-#from googleapiclient import discovery
+import gcloud_wrappers
+from oauth2client.client import GoogleCredentials
+from googleapiclient import discovery
 from model import C3D, C3D2
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
