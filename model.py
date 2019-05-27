@@ -172,3 +172,42 @@ class C3D2(torch.nn.Module):
         x = self.FC6(x)
         x = F.softmax(x, dim=1)
         return x
+
+
+class C2D(torch.nn.Module):
+    def __init__(self):
+        super(C2D, self).__init__()
+        self.Relu = torch.nn.ReLU()
+
+        self.conv1 = torch.nn.Conv2d(3, 32, (7, 7), stride=(2, 2))
+        self.norm1 = torch.nn.BatchNorm2d(num_features=32)
+        self.conv2 = torch.nn.Conv2d(32, 64, (5, 5), stride=(1, 1))
+        self.norm2 = torch.nn.BatchNorm2d(num_features=64)
+        self.conv3 = torch.nn.Conv2d(64, 128, (3, 3), stride=(1, 1))
+        self.conv4 = torch.nn.Conv2d(128, 256, (3, 3), stride=(1, 1))
+        self.conv5 = torch.nn.Conv2d(256, 256, (3, 3), stride=(1, 1))
+        self.FC1 = torch.nn.Linear(256*7*37,1024)
+        self.FC2 = torch.nn.Linear(1024, 256)
+        self.FC3 = torch.nn.Linear(256, 1024)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.Relu(x)
+        x = self.conv2(x)
+        x = self.norm2(x)
+        x = self.Relu(x)
+        x = self.conv3(x)
+        x = self.Relu(x)
+        x = self.conv4(x)
+        x = self.Relu(x)
+        x = self.conv5(x)
+        x = self.Relu(x)
+        x = x.view(-1, 256 * 7 * 37)
+        x = self.FC1(x)
+        x = self.Relu(x)
+        x = self.FC2(x)
+        x = self.Relu(x)
+        x = torch.nn.Softmax(self.FC3(x))
+
+        return x
