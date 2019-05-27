@@ -52,7 +52,7 @@ def train_with_loader(train_loader, n_labels, num_channels):
 
     loss_criterion = torch.nn.CrossEntropyLoss()
 
-    scheduler = CosineAnnealingLR(optimizer, T_max=10)
+    # scheduler = CosineAnnealingLR(optimizer, T_max=10)
     # scheduler = StepLR(optimizer,
     #                    step_size=c.STEP_SIZE,
     #                    gamma=c.GAMMA)
@@ -68,7 +68,7 @@ def train_with_loader(train_loader, n_labels, num_channels):
 
         train_running_loss = 0.0
         # Step the lr scheduler each epoch!
-        scheduler.step()
+        # scheduler.step()
         total_loss = 0
         start = time.time()
 
@@ -207,9 +207,6 @@ def main():
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
     check_files_missing(origin_file_path)
-    # return
-
-    # try:
 
     dataset = AudioDataset(
         origin_file_path,
@@ -236,10 +233,6 @@ def main():
         len(indexed_labels.keys()),
         num_channels=num_channels
     )
-
-    # except:
-
-    # gcloud_wrappers.stop_speech_vm()
 
 
 if __name__ == '__main__':

@@ -13,26 +13,6 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 np.random.seed(12345)
 
-
-# Code from James Lyon
-def delta(feat, N):
-    """Compute delta features from a feature vector sequence.
-    :param feat: A numpy array of size (NUMFRAMES by number of features) containing features. Each row holds 1 feature vector.
-    :param N: For each frame, calculate delta features based on preceding and following N frames
-    :returns: A numpy array of size (NUMFRAMES by number of features) containing delta features. Each row holds 1 delta feature vector.
-    """
-    if N < 1:
-        raise ValueError('N must be an integer >= 1')
-    NUMFRAMES = len(feat)
-    denominator = 2 * sum([i ** 2 for i in range(1, N + 1)])
-    delta_feat = np.empty_like(feat)
-    padded = np.pad(feat, ((N, N), (0, 0)), mode='edge')  # padded version of feat
-    for t in range(NUMFRAMES):
-        delta_feat[t] = np.dot(np.arange(-N, N + 1),
-                               padded[t: t + 2 * N + 1]) / denominator  # [t : t+2*N+1] == [(N+t)-N : (N+t)+N+1]
-    return delta_feat
-
-
 # with equal number of samples
 def create_N_first_train_paths(N):
     train_paths_origin = np.genfromtxt(c.DATA_ORIGIN + 'train_paths.txt', dtype='str')
@@ -387,10 +367,15 @@ class CMVN(object):
 
     def __call__(self, sample):
         feature, label = sample['feature'], sample['label']
-        feature = speech.processing.cmvn(feature, variance_normalization=True)
-
         if c.DERIVATIVE:
             feature = speech.feature.extract_derivative_feature(feature)
+            if c.NORMALIZE:
+                feature[:, :, 0] = speech.processing.cmvn(feature[:, :, 0], variance_normalization=True)
+                feature[:, :, 1] = speech.processing.cmvn(feature[:, :, 1], variance_normalization=True)
+                feature[:, :, 2] = speech.processing.cmvn(feature[:, :, 2], variance_normalization=True)
+        else:
+            if c.NORMALIZE:
+                feature = speech.processing.cmvn(feature, variance_normalization=True)
 
         return {'feature': feature, 'label': label}
 
@@ -404,24 +389,4 @@ if __name__ == "__main__":
     wav_path = '/Users/polaras/PycharmProjects/Speech_recognition_Project/data_temp_small/id10041/n9rD9-kU2Mw/00003.wav'
     audio_signal = load_wav(wav_path, sample_rate=c.SAMPLE_RATE)
 
-    logenergy = speech.feature.lmfe(audio_signal,
-                                    sampling_frequency=c.SAMPLE_RATE,
-                                    frame_length=c.FRAME_LEN,
-                                    frame_stride=c.FRAME_STEP,
-                                    num_filters=c.NUM_COEF,
-                                    fft_length=c.NUM_FFT
-                                    )
-
-    fbank_d_dd = speech.feature.extract_derivative_feature(logenergy)
-
-    fbank_d_dd = fbank_d_dd.transpose(2, 0, 1)
-    print(fbank_d_dd.shape)
-
-    feature_cube = np.zeros((3, 20, 80, 40), dtype=np.float32)
-
-    idx = np.random.randint(fbank_d_dd.shape[1] - 80, size=20)
-
-    for num, index in enumerate(idx):
-        feature_cube[:, num, :, :] = fbank_d_dd[:, index:index + 80, :]
-
-    print(feature_cube.shape)
+    pass
