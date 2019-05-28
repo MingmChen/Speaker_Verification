@@ -175,14 +175,15 @@ class C3D2(torch.nn.Module):
         return x
 
     def load_checkpoint(self, checkpoint_dict):
-        model_dict = C3D2.state_dict()
+        model = C3D2(n_labels=self.n_labels, num_channels=self.num_channels)
+        model_dict = model.state_dict()
         pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
                            k.replace('module.', '') in model_dict}
         model_dict.update(pretrained_dict)
-        C3D2.load_state_dict(pretrained_dict)
+        model.load_state_dict(pretrained_dict)
 
     def create_Speaker_Model(self, utterance):
-        model = C3D2(self.n_labels, self.num_channels)
+        model = C3D2(n_labels=self.n_labels, num_channels=self.num_channels)
         Speaker_Model = model.forward(utterance, development=False)
         return Speaker_Model
 
