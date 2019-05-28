@@ -175,6 +175,9 @@ class C3D2(torch.nn.Module):
 
 
 class C2D(torch.nn.Module):
+    """
+    input = (x,3,40,100)
+    """
     def __init__(self):
         super(C2D, self).__init__()
         self.Relu = torch.nn.ReLU()
