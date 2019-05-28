@@ -80,6 +80,22 @@ class Evaluation:
             return similarity_vec, assigned_speaker_vec
 
 
+def create_dataset(indexed_labels, origin_file_path):
+    from load_data import AudioDataset
+
+    cube_shape = (80, 40, 20)
+    cube = FeatureCube(cube_shape)
+    transform = transforms.Compose([CMVN(), cube, ToTensor()])
+
+    dataset = AudioDataset(
+        origin_file_path,
+        c.DATA_ORIGIN,
+        indexed_labels=indexed_labels,
+        transform=transform)
+
+    return dataset
+
+
 def evaluate():
     model = C3D2(n_labels=100, num_channels=1)
 
