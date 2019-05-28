@@ -138,7 +138,7 @@ class C3D2(torch.nn.Module):
         self.PReLu5 = torch.nn.PReLU()
         self.FC6 = torch.nn.Linear(128, n_labels)
 
-    def forward(self, x):
+    def forward(self, x, development=True):
         x = self.conv1_1(x)
         x = self.batch_norm1_1(x)
         x = self.PReLu1_1(x)
@@ -167,10 +167,11 @@ class C3D2(torch.nn.Module):
         x = self.PReLu4_2(x)
         x = x.view(-1, 4 * 3 * 3 * 128)
         x = self.FC5(x)
-        # x = self.batch_normFC5(x)
-        x = self.PReLu5(x)
-        x = self.FC6(x)
-        x = F.softmax(x, dim=1)
+        if development:
+            # x = self.batch_normFC5(x)
+            x = self.PReLu5(x)
+            x = self.FC6(x)
+            x = F.softmax(x, dim=1)
         return x
 
 
@@ -178,6 +179,7 @@ class C2D(torch.nn.Module):
     """
     input = (x,3,40,100)
     """
+
     def __init__(self):
         super(C2D, self).__init__()
         self.Relu = torch.nn.ReLU()
@@ -188,7 +190,7 @@ class C2D(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(64, 128, (3, 3), stride=(1, 1))
         self.conv4 = torch.nn.Conv2d(128, 256, (3, 3), stride=(1, 1))
         self.conv5 = torch.nn.Conv2d(256, 256, (3, 3), stride=(1, 1))
-        self.FC1 = torch.nn.Linear(256*7*37,1024)
+        self.FC1 = torch.nn.Linear(256 * 7 * 37, 1024)
         self.FC2 = torch.nn.Linear(1024, 256)
         self.FC3 = torch.nn.Linear(256, 1024)
 
