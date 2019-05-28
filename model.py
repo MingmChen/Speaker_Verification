@@ -240,8 +240,8 @@ def create_speaker_models():
 
     model_path = '/Users/leonidas/Downloads/model_best.pt'
     save_speaker_models_path = '/Users/leonidas/PycharmProjects/Speaker_Verification/speaker_models'
-    indexed_labels = np.load(c.ROOT + '/30_first_ids.npy', allow_pickle=True).item()
-    origin_file_path = c.ROOT + '/30_first_ids.txt'
+    indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
+    origin_file_path = c.ROOT + '/50_first_ids.txt'
 
     train_paths_origin = np.genfromtxt(origin_file_path, dtype='str')
 
@@ -267,16 +267,9 @@ def create_speaker_models():
         indexed_labels=indexed_labels,
         transform=transform)
 
-    dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    np.random.shuffle(indices)
-    train_sampler = SubsetRandomSampler(indices)
-
     train_loader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=1,
-        sampler=train_sampler
-    )
+        batch_size=1)
 
     if not os.path.exists(save_speaker_models_path):
         os.mkdir(save_speaker_models_path)
