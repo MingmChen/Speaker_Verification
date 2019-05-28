@@ -104,7 +104,7 @@ class C3D(nn.Module):
 class C3D2(torch.nn.Module):
     def __init__(self, n_labels, num_channels):
         super(C3D2, self).__init__()
-
+        self.n_labels, self.num_channels = n_labels, num_channels
         print('tasos model')
 
         self.conv1_1 = torch.nn.Conv3d(num_channels, 16, kernel_size=(3, 1, 5), stride=(1, 1, 1))
@@ -182,8 +182,8 @@ class C3D2(torch.nn.Module):
         C3D2.load_state_dict(pretrained_dict)
 
     def create_Speaker_Model(self, utterance):
-        model = C3D2()
-        Speaker_Model = model.forward(utterance,development=False)
+        model = C3D2(self.n_labels, self.num_channels)
+        Speaker_Model = model.forward(utterance, development=False)
         return Speaker_Model
 
 
@@ -227,5 +227,3 @@ class C2D(torch.nn.Module):
         x = torch.nn.Softmax(self.FC3(x))
 
         return x
-
-
