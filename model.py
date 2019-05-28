@@ -174,6 +174,13 @@ class C3D2(torch.nn.Module):
             x = F.softmax(x, dim=1)
         return x
 
+    def load_checkpoint(self, checkpoint_dict):
+        model_dict = C3D2.state_dict()
+        pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
+                           k.replace('module.', '') in model_dict}
+        model_dict.update(pretrained_dict)
+        C3D2.load_state_dict(pretrained_dict)
+
 
 class C2D(torch.nn.Module):
     """
@@ -216,9 +223,4 @@ class C2D(torch.nn.Module):
 
         return x
 
-    def load_checkpoint(self, checkpoint_dict):
-        model_dict = C3D2.state_dict()
-        pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
-                           k.replace('module.', '') in model_dict}
-        model_dict.update(pretrained_dict)
-        C3D2.load_state_dict(pretrained_dict)
+
