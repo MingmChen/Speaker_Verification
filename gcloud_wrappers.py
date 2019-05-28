@@ -2,6 +2,10 @@ import time
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
+project = 'dt2119-speaker-verification'
+zone = 'europe-west1-b'
+instance = 'dt2119-speaker-verification-vm'
+
 
 def start_speech_vm(compute=None):
     if compute is None:
@@ -14,16 +18,16 @@ def start_speech_vm(compute=None):
         )
 
     start_request = compute.instances().start(
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
-        instance='dt2119-speaker-verification-vm'
+        project=project,
+        zone=zone,
+        instance=instance
     )
     start_response = start_request.execute()
 
     wait_for_operation(
         compute=compute,
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
+        project=project,
+        zone=zone,
         operation=start_response['name']
     )
 
@@ -39,17 +43,17 @@ def stop_speech_vm(compute=None):
         )
 
     stop_request = compute.instances().stop(
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
-        instance='dt2119-speaker-verification-vm'
+        project=project,
+        zone=zone,
+        instance=instance
     )
 
     stop_response = stop_request.execute()
 
     wait_for_operation(
         compute=compute,
-        project='dt2119-speaker-verification',
-        zone='europe-west1-b',
+        project=project,
+        zone=zone,
         operation=stop_response['name']
     )
 
@@ -70,6 +74,7 @@ def wait_for_operation(compute, project, zone, operation):
 
         time.sleep(1)
 
+
 # from google.cloud import storage
 # def upload_blob(bucket_name, source_file_name, destination_blob_name):
 #     """Uploads a file to the bucket."""
@@ -83,8 +88,6 @@ def wait_for_operation(compute, project, zone, operation):
 
 
 if __name__ == "__main__":
-
-
-    # start_speech_vm()
+    start_speech_vm()
     # stop_speech_vm(compute)
     pass
