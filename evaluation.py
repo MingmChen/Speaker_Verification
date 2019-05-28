@@ -37,7 +37,9 @@ def get_and_plot_k_eer_auc(label, scores, k=1):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.grid()
-    plt.show()
+    plt.savefig('eer_auc.png')
+
+    # plt.show()
 
 
 def get_eer_auc(label, distance):
@@ -55,10 +57,10 @@ class Evaluation:
         self.speaker_models = {}
         for file in os.listdir(speaker_models_path):
             if torch.cuda.is_available():
-                self.speaker_models[file.replace('.pt','')] = (torch.load(speaker_models_path + '/' + file))
+                self.speaker_models[file.replace('.pt', '')] = (torch.load(speaker_models_path + '/' + file))
             else:
-                self.speaker_models[file.replace('.pt','')] = (torch.load(speaker_models_path + '/' + file,
-                                                        map_location=lambda storage, loc: storage))
+                self.speaker_models[file.replace('.pt', '')] = (torch.load(speaker_models_path + '/' + file,
+                                                                           map_location=lambda storage, loc: storage))
 
     def compute_Similarity(self, utterance, type='cosine_similarity'):
         self.model.eval()
@@ -74,8 +76,8 @@ class Evaluation:
 
             assigned_speaker_vec[np.argmax(similarity_vec)] = 1
 
-            print('the speaker was closer to {}'.format(
-                list(self.speaker_models.items())[np.argmax(assigned_speaker_vec)][0]))
+            # print('the speaker was closer to {}'.format(
+            #     list(self.speaker_models.items())[np.argmax(assigned_speaker_vec)][0]))
 
             return similarity_vec, assigned_speaker_vec
 
@@ -116,17 +118,18 @@ def evaluate():
         [a, b, cc, d] = features.shape
         s = torch.from_numpy(features.reshape((1, a, b, cc, d)))
 
-
         similarity_vec, _ = eval.compute_Similarity(s)
         scores.append(similarity_vec)
 
         current_id = dataset.sound_files[i][0:7]
+
+        print('correct speaker {} , the speaker was closer to {}'.format(current_id,
+                                                                         speaker_model_ids[np.argmax(similarity_vec)]))
+
         true_label = np.zeros_like(similarity_vec)
         true_label[np.argwhere(current_id in speaker_model_ids)] = 1
         labels.append(true_label)
 
-        if i == 10:
-            break
 
     labels = np.array(labels)
     scores = np.array(scores)
