@@ -181,10 +181,10 @@ class C3D2(torch.nn.Module):
                            k.replace('module.', '') in model_dict}
         model_dict.update(pretrained_dict)
         model.load_state_dict(pretrained_dict)
+        return model
 
     def create_Speaker_Model(self, utterance):
-        model = C3D2(n_labels=self.n_labels, num_channels=self.num_channels)
-        Speaker_Model = model.forward(utterance, development=False)
+        Speaker_Model = self.forward(utterance, development=False)
         return Speaker_Model
 
 
@@ -228,3 +228,72 @@ class C2D(torch.nn.Module):
         x = torch.nn.Softmax(self.FC3(x))
 
         return x
+
+
+def create_speaker_models():
+    import constants as c
+    import torchvision.transforms as transforms
+    from load_data import AudioDataset
+    import numpy as np
+    from utils import FeatureCube3C, FeatureCube, CMVN, ToTensor, SubsetRandomSampler
+    import os
+
+    model_path = '/Users/leonidas/Downloads/model_best.pt'
+    save_speaker_models_path = '/Users/leonidas/PycharmProjects/Speaker_Verification/speaker_models'
+    indexed_labels = np.load(c.ROOT + '/30_first_ids.npy', allow_pickle=True).item()
+    origin_file_path = c.ROOT + '/30_first_ids.txt'
+
+    train_paths_origin = np.genfromtxt(origin_file_path, dtype='str')
+
+    id_per_wav = []
+    for index, train in enumerate(train_paths_origin):
+        id_per_wav.append(train[0:7])
+
+    if c.DERIVATIVE:
+        num_channels = 3
+        cube_shape = (80, 40, 20, num_channels)
+        cube = FeatureCube3C(cube_shape)
+
+    else:
+        num_channels = 1
+        cube_shape = (80, 40, 20)
+        cube = FeatureCube(cube_shape)
+
+    transform = transforms.Compose([CMVN(), cube, ToTensor()])
+
+    dataset = AudioDataset(
+        origin_file_path,
+        c.DATA_ORIGIN,
+        indexed_labels=indexed_labels,
+        transform=transform)
+
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    np.random.shuffle(indices)
+    train_sampler = SubsetRandomSampler(indices)
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=1,
+        sampler=train_sampler
+    )
+
+    if not os.path.exists(save_speaker_models_path):
+        os.mkdir(save_speaker_models_path)
+
+    if not torch.cuda.is_available():
+        model = C3D2(100, 1).load_checkpoint(torch.load(model_path, map_location=lambda storage,loc: storage))
+    else:
+        model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
+
+    speaker_models = {}
+    for i, data in enumerate(train_loader, 1):
+        # get the inputs
+        train_input, train_labels = data
+        speaker_model = model.create_Speaker_Model(train_input)
+        speaker_models[id_per_wav[i-1]] = speaker_model
+        torch.save(speaker_model,'{}/{}.pt'.format(save_speaker_models_path, id_per_wav[i-1]))
+
+
+if __name__ == '__main__':
+    create_speaker_models()
