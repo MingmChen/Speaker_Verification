@@ -66,7 +66,7 @@ class AudioDataset(data.Dataset):
                                 frame_length=c.FRAME_LEN,
                                 frame_stride=c.FRAME_STEP,
                                 num_filters=c.NUM_COEF,
-                                fft_length=c.NUM_FFT
+                                fft_length=c.NUM_FFT,
                                 )
 
         # Label extraction

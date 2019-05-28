@@ -181,7 +181,6 @@ class C2D(torch.nn.Module):
     def __init__(self):
         super(C2D, self).__init__()
         self.Relu = torch.nn.ReLU()
-
         self.conv1 = torch.nn.Conv2d(3, 32, (7, 7), stride=(2, 2))
         self.norm1 = torch.nn.BatchNorm2d(num_features=32)
         self.conv2 = torch.nn.Conv2d(32, 64, (5, 5), stride=(1, 1))

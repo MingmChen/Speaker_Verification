@@ -4,7 +4,7 @@ import gcloud_wrappers
 from oauth2client.client import GoogleCredentials
 from googleapiclient import discovery
 import torchvision.transforms as transforms
-from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
+from torch.optim.lr_scheduler import StepLR
 from torch.autograd import Variable
 import time
 from utils import *
@@ -51,8 +51,7 @@ def train_with_loader(train_loader, n_labels, num_channels):
                           weight_decay=c.WEIGHT_DECAY)
 
     loss_criterion = torch.nn.CrossEntropyLoss()
-
-    scheduler = CosineAnnealingLR(optimizer, T_max=10)
+    # scheduler = CosineAnnealingLR(optimizer, T_max=4 * len(train_loader))
     # scheduler = StepLR(optimizer,
     #                    step_size=c.STEP_SIZE,
     #                    gamma=c.GAMMA)
@@ -68,7 +67,6 @@ def train_with_loader(train_loader, n_labels, num_channels):
 
         train_running_loss = 0.0
         # Step the lr scheduler each epoch!
-        scheduler.step()
         total_loss = 0
         start = time.time()
 
@@ -83,6 +81,7 @@ def train_with_loader(train_loader, n_labels, num_channels):
 
             # zero the parameter gradients
             optimizer.zero_grad()
+            # scheduler.step()
 
             # forward
             outputs = model(train_input)
@@ -102,6 +101,7 @@ def train_with_loader(train_loader, n_labels, num_channels):
                 total_loss += train_running_loss / c.BATCH_PER_LOG
                 train_running_loss = 0.0
 
+        # scheduler = CosineAnnealingLR(optimizer, T_max=4 * len(train_loader))
         correct = 0
         total = 0
         with torch.no_grad():
@@ -207,9 +207,6 @@ def main():
     transform = transforms.Compose([CMVN(), cube, ToTensor()])
 
     check_files_missing(origin_file_path)
-    # return
-
-    # try:
 
     dataset = AudioDataset(
         origin_file_path,
@@ -222,7 +219,6 @@ def main():
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
     np.random.shuffle(indices)
-
     train_sampler = SubsetRandomSampler(indices)
 
     train_loader = torch.utils.data.DataLoader(
@@ -237,10 +233,7 @@ def main():
         num_channels=num_channels
     )
 
-    # except:
-
-    # gcloud_wrappers.stop_speech_vm()
-
+    gcloud_wrappers.stop_speech_vm()
 
 if __name__ == '__main__':
     main()
