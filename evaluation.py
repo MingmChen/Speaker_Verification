@@ -1,3 +1,6 @@
+from scipy.interpolate import interp1d
+from scipy.optimize import brentq
+from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import *
 from model import *
@@ -41,51 +44,84 @@ def get_eer_auc(label, distance):
     fpr, tpr, thresholds = roc_curve(label, distance, pos_label=1)
     auc = roc_auc_score(label, distance)
     eer = brentq(lambda x: 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
-    eer2 = fpr[np.abs(fpr - (1 - tpr)).argmin(0)]
 
-    if np.array_equal(eer, eer2):
-        print("SAME")
     return eer, auc, fpr, tpr
 
 
 class Evaluation:
-    def __init__(self, background_model, utterance, speaker_models_path):
+    def __init__(self, background_model, speaker_models_path):
 
         self.model = background_model
-        self.utterance = utterance
         self.speaker_models = {}
         for file in os.listdir(speaker_models_path):
             if torch.cuda.is_available():
-                self.speaker_models[file] = (torch.load(speaker_models_path + '/' + file))
+                self.speaker_models[file.replace('.pt','')] = (torch.load(speaker_models_path + '/' + file))
             else:
-                self.speaker_models[file] = (torch.load(speaker_models_path + '/' + file,
+                self.speaker_models[file.replace('.pt','')] = (torch.load(speaker_models_path + '/' + file,
                                                         map_location=lambda storage, loc: storage))
 
-    def compute_Similarity(self, type='cosine_similarity'):
+    def compute_Similarity(self, utterance, type='cosine_similarity'):
         self.model.eval()
-        self.speaker_features = self.model.create_Speaker_Model(self.utterance).detach().numpy()
+        speaker_features = self.model.create_Speaker_Model(utterance).detach().numpy()
+
         if type == 'cosine_similarity':
-            similarity_vec = np.zeros((1, len(self.speaker_models)))
-            assigned_speaker_vec = np.zeros((1, len(self.speaker_models)))
+
+            similarity_vec = np.zeros(len(self.speaker_models))
+            assigned_speaker_vec = np.zeros(len(self.speaker_models))
+
             for index, (key, speaker_model) in enumerate(self.speaker_models.items()):
-                similarity_vec[0, index] = cosine_similarity(self.speaker_features, speaker_model.detach().numpy())
-            assigned_speaker_vec[0, np.where(similarity_vec == np.max(similarity_vec))[1]] = 1
+                similarity_vec[index] = cosine_similarity(speaker_features, speaker_model.detach().numpy())
+
+            assigned_speaker_vec[np.argmax(similarity_vec)] = 1
+
             print('the speaker was closer to {}'.format(
                 list(self.speaker_models.items())[np.argmax(assigned_speaker_vec)][0]))
+
             return similarity_vec, assigned_speaker_vec
 
 
-if __name__ == '__main__':
-    # model = C3D2(n_labels=100, num_channels=1)
-    #
-    # x = torch.rand((1, 1, 20, 80, 40))
-    #
-    # dir_path = "C:/Users/anala/Desktop/coursecontent/Speech_and_Speaker/Project/speaker_models"
-    # eval = Evaluation(model, x, dir_path)
-    # eval.compute_Similarity()
-    labels = np.array([[1., 0.], [1., 0.]])
-    scores = np.array([[0.7, 0.3], [0.2, 0.8]])
-    print(labels.flatten())
+def evaluate():
+    model = C3D2(n_labels=100, num_channels=1)
+
+    dir_path = os.path.join(c.ROOT, 'speaker_models')
+    test_set = os.path.join(c.ROOT, '50_first_ids.txt')
+    indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
+
+    dataset = create_dataset(indexed_labels=indexed_labels, origin_file_path=test_set)
+
+    eval = Evaluation(model, dir_path)
+
+    speaker_model_ids = list(eval.speaker_models.keys())
+    labels = []
+    scores = []
+
+    for i in range(len(dataset)):
+        features = dataset.__getitem__(i)[0]
+        [a, b, cc, d] = features.shape
+        s = torch.from_numpy(features.reshape((1, a, b, cc, d)))
+
+
+        similarity_vec, _ = eval.compute_Similarity(s)
+        scores.append(similarity_vec)
+
+        current_id = dataset.sound_files[i][0:7]
+        true_label = np.zeros_like(similarity_vec)
+        true_label[np.argwhere(current_id in speaker_model_ids)] = 1
+        labels.append(true_label)
+
+        if i == 10:
+            break
+
+    labels = np.array(labels)
+    scores = np.array(scores)
+
+    # labels = np.array([[1., 0.], [1., 0.]])
+    # scores = np.array([[0.7, 0.3], [0.2, 0.8]])
+    # print(labels.flatten())
+
     # fpr, tpr, thresholds = roc_curve(labels[0], scores[0], pos_label=1)
     get_and_plot_k_eer_auc(labels.flatten(), scores.flatten(), k=1)
-    
+
+
+if __name__ == '__main__':
+    evaluate()
