@@ -181,6 +181,11 @@ class C3D2(torch.nn.Module):
         model_dict.update(pretrained_dict)
         C3D2.load_state_dict(pretrained_dict)
 
+    def create_Speaker_Model(self, utterance):
+        model = C3D2()
+        Speaker_Model = model.forward(utterance,development=False)
+        return Speaker_Model
+
 
 class C2D(torch.nn.Module):
     """
