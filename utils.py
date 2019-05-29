@@ -10,8 +10,25 @@ import torch.optim as optim
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data.sampler import SubsetRandomSampler
+import torchvision.transforms as transforms
 
 np.random.seed(12345)
+
+
+def create_dataset(indexed_labels, origin_file_path):
+    from load_data import AudioDataset
+
+    cube_shape = (80, 40, 20)
+    cube = FeatureCube(cube_shape)
+    transform = transforms.Compose([CMVN(), cube, ToTensor()])
+
+    dataset = AudioDataset(
+        origin_file_path,
+        c.DATA_ORIGIN,
+        indexed_labels=indexed_labels,
+        transform=transform)
+
+    return dataset
 
 # with equal number of samples
 def create_N_first_train_paths(N):
@@ -26,7 +43,7 @@ def create_N_first_train_paths(N):
         # print(train)
 
     uniques = np.unique(train_ids)
-    uni_500 = uniques[0:N]
+    uni_500 = uniques[-N:]
     final_trains = []
 
     min_length = 100000
