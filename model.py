@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
+import constants as c
+from torch.autograd import Variable
 
 
 class C3D(nn.Module):
@@ -176,6 +178,8 @@ class C3D2(torch.nn.Module):
 
     def load_checkpoint(self, checkpoint_dict):
         model = C3D2(n_labels=self.n_labels, num_channels=self.num_channels)
+        if torch.cuda.is_available():
+            model.cuda()
         model_dict = model.state_dict()
         pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
                            k.replace('module.', '') in model_dict}
@@ -354,8 +358,8 @@ def create_speaker_models():
     from utils import FeatureCube3C, FeatureCube, CMVN, ToTensor, SubsetRandomSampler
     import os
 
-    model_path = '/Users/leonidas/Downloads/model_best.pt'
-    save_speaker_models_path = '/Users/leonidas/PycharmProjects/Speaker_Verification/speaker_models'
+    model_path = os.path.join(c.ROOT, 'Models/model_14_percent_best_so_far.pt')
+    save_speaker_models_path = os.path.join(c.ROOT, 'speaker_models')
     indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
     origin_file_path = c.ROOT + '/50_first_ids.txt'
 
@@ -392,14 +396,21 @@ def create_speaker_models():
 
     if not torch.cuda.is_available():
         model = C3D2(100, 1).load_checkpoint(torch.load(model_path, map_location=lambda storage,loc: storage))
+        # model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
     else:
         model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
 
     speaker_models = {}
+    model.eval()
     for i, data in enumerate(train_loader, 1):
         # get the inputs
         train_input, train_labels = data
-        speaker_model = model.create_Speaker_Model(train_input)
+        if torch.cuda.is_available():
+            train_input, train_labels = Variable(train_input.cuda()), Variable(train_labels.cuda())
+        else:
+            train_input, train_labels = Variable(train_input), Variable(train_labels)
+
+        speaker_model = model(train_input, development=False)
         speaker_models[id_per_wav[i-1]] = speaker_model
         torch.save(speaker_model,'{}/{}.pt'.format(save_speaker_models_path, id_per_wav[i-1]))
 
