@@ -184,6 +184,64 @@ class C3D2(torch.nn.Module):
         return model
 
     def create_Speaker_Model(self, utterance):
+        self.eval()
+        Speaker_Model = self.forward(utterance, development=False)
+        return Speaker_Model
+
+class C3D3(torch.nn.Module):
+    def __init__(self, n_labels, num_channels):
+        super(C3D3, self).__init__()
+        self.n_labels, self.num_channels = n_labels, num_channels
+        print('short model')
+        self.conv1_1 = torch.nn.Conv3d(num_channels, 16, kernel_size=(6, 2, 10), stride=(1, 1, 1))
+        self.batch_norm1_1 = torch.nn.BatchNorm3d(num_features=16)
+        self.PReLu1_1 = torch.nn.PReLU()
+        self.conv1_2 = torch.nn.Conv3d(16, 16, kernel_size=(6, 9, 2), stride=(1, 2, 1))
+        self.batch_norm1_2 = torch.nn.BatchNorm3d(num_features=16)
+        self.PReLu1_2 = torch.nn.PReLU()
+        self.pool1 = torch.nn.MaxPool3d(kernel_size=(1, 1, 3), stride=(1, 1, 2))
+        self.conv2_1 = torch.nn.Conv3d(16, 32, kernel_size=(3, 16, 2), stride=(1, 2, 1))
+        self.batch_norm2_1 = torch.nn.BatchNorm3d(num_features=32)
+        self.PReLu2_1 = torch.nn.PReLU()
+        self.conv2_2 = torch.nn.Conv3d(32, 32, kernel_size=(3, 2, 6), stride=(1, 2, 1))
+        self.batch_norm2_2 = torch.nn.BatchNorm3d(num_features=32)
+        self.PReLu2_2 = torch.nn.PReLU()
+        self.FC3 = torch.nn.Linear(7680, 128)
+        self.PReLu5 = torch.nn.PReLU()
+        self.FC4 = torch.nn.Linear(128, n_labels)
+
+    def forward(self, x, development=True):
+        x = self.conv1_1(x)
+        x = self.batch_norm1_1(x)
+        x = self.PReLu1_1(x)
+        x = self.conv1_2(x)
+        x = self.batch_norm1_2(x)
+        x = self.PReLu1_2(x)
+        x = self.pool1(x)
+        x = self.conv2_1(x)
+        x = self.batch_norm2_1(x)
+        x = self.PReLu2_1(x)
+        x = self.conv2_2(x)
+        x = self.batch_norm2_2(x)
+        x = self.PReLu2_2(x)
+        x = x.view(-1, 7680)
+        x = self.FC3(x)
+        if development:
+            x = self.PReLu5(x)
+            x = torch.nn.Softmax(self.FC4(x))
+        return x
+
+    def load_checkpoint(self, checkpoint_dict):
+        model = C3D3(n_labels=self.n_labels, num_channels=self.num_channels)
+        model_dict = model.state_dict()
+        pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
+                           k.replace('module.', '') in model_dict}
+        model_dict.update(pretrained_dict)
+        model.load_state_dict(pretrained_dict)
+        return model
+
+    def create_Speaker_Model(self, utterance):
+        self.eval()
         Speaker_Model = self.forward(utterance, development=False)
         return Speaker_Model
 
