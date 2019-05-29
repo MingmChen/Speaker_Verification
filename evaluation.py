@@ -7,7 +7,6 @@ from model import *
 import os
 import matplotlib.pyplot as plt
 import constants as c
-import torchvision.transforms as transforms
 
 def get_and_plot_k_eer_auc(label, scores, k=1):
     step = int(label.shape[0] / float(k))
@@ -85,20 +84,7 @@ class Evaluation:
             return similarity_vec, assigned_speaker_vec
 
 
-def create_dataset(indexed_labels, origin_file_path):
-    from load_data import AudioDataset
 
-    cube_shape = (80, 40, 20)
-    cube = FeatureCube(cube_shape)
-    transform = transforms.Compose([CMVN(), cube, ToTensor()])
-
-    dataset = AudioDataset(
-        origin_file_path,
-        c.DATA_ORIGIN,
-        indexed_labels=indexed_labels,
-        transform=transform)
-
-    return dataset
 
 
 def evaluate():
