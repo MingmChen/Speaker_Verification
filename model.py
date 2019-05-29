@@ -286,8 +286,7 @@ class C3D4(torch.nn.Module):
         x = self.FC3(x)
         if development:
             x = self.PReLu5(x)
-            x = self.FC4(x)
-            x = self.softmax(x)
+            x = torch.nn.Softmax(self.FC4(x))
         return x
 
     def load_checkpoint(self, checkpoint_dict):
