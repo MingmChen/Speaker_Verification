@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-
+from torch.autograd import Variable
 
 class C3D(nn.Module):
     def __init__(self, n_labels):
@@ -176,6 +176,8 @@ class C3D2(torch.nn.Module):
 
     def load_checkpoint(self, checkpoint_dict):
         model = C3D2(n_labels=self.n_labels, num_channels=self.num_channels)
+        if torch.cuda.is_available():
+            model.cuda()
         model_dict = model.state_dict()
         pretrained_dict = {k.replace('module.', ''): v for k, v in checkpoint_dict["state_dict"].items() if
                            k.replace('module.', '') in model_dict}
@@ -348,60 +350,42 @@ class C2D(torch.nn.Module):
 
 def create_speaker_models():
     import constants as c
-    import torchvision.transforms as transforms
-    from load_data import AudioDataset
     import numpy as np
-    from utils import FeatureCube3C, FeatureCube, CMVN, ToTensor, SubsetRandomSampler
     import os
+    from utils import create_dataset
 
-    model_path = '/Users/leonidas/Downloads/model_best.pt'
-    save_speaker_models_path = '/Users/leonidas/PycharmProjects/Speaker_Verification/speaker_models'
+    model_path = os.path.join(c.ROOT, 'Models/model_14_percent_best_so_far.pt')
+    save_speaker_models_path = os.path.join(c.ROOT, 'speaker_models')
+    enrollment_set = os.path.join(c.ROOT, '50_first_ids.txt')
     indexed_labels = np.load(c.ROOT + '/50_first_ids.npy', allow_pickle=True).item()
-    origin_file_path = c.ROOT + '/50_first_ids.txt'
 
-    train_paths_origin = np.genfromtxt(origin_file_path, dtype='str')
-
-    id_per_wav = []
-    for index, train in enumerate(train_paths_origin):
-        id_per_wav.append(train[0:7])
-
-    if c.DERIVATIVE:
-        num_channels = 3
-        cube_shape = (80, 40, 20, num_channels)
-        cube = FeatureCube3C(cube_shape)
-
-    else:
-        num_channels = 1
-        cube_shape = (80, 40, 20)
-        cube = FeatureCube(cube_shape)
-
-    transform = transforms.Compose([CMVN(), cube, ToTensor()])
-
-    dataset = AudioDataset(
-        origin_file_path,
-        c.DATA_ORIGIN,
-        indexed_labels=indexed_labels,
-        transform=transform)
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=1)
+    dataset = create_dataset(indexed_labels=indexed_labels, origin_file_path=enrollment_set)
 
     if not os.path.exists(save_speaker_models_path):
         os.mkdir(save_speaker_models_path)
 
     if not torch.cuda.is_available():
         model = C3D2(100, 1).load_checkpoint(torch.load(model_path, map_location=lambda storage,loc: storage))
+        # model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
     else:
         model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
 
-    speaker_models = {}
-    for i, data in enumerate(train_loader, 1):
+    model.eval()
+    for i in range(len(dataset)):
         # get the inputs
-        train_input, train_labels = data
-        speaker_model = model.create_Speaker_Model(train_input)
-        speaker_models[id_per_wav[i-1]] = speaker_model
-        torch.save(speaker_model,'{}/{}.pt'.format(save_speaker_models_path, id_per_wav[i-1]))
+        train_input, _ = dataset.__getitem__(i)
+        [a, b, cc, d] = train_input.shape
+        train_input = torch.from_numpy(train_input.reshape((1, a, b, cc, d)))
+
+        if torch.cuda.is_available():
+            train_input = Variable(train_input.cuda())
+        else:
+            train_input = Variable(train_input)
+
+        current_id = dataset.sound_files[i][0:7]
+
+        speaker_model = model(train_input, development=False)
+        torch.save(speaker_model,'{}/{}.pt'.format(save_speaker_models_path, current_id))
 
 
 if __name__ == '__main__':

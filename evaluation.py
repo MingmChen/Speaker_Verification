@@ -6,7 +6,7 @@ from utils import *
 from model import *
 import os
 import matplotlib.pyplot as plt
-
+import constants as c
 
 def get_and_plot_k_eer_auc(label, scores, k=1):
     step = int(label.shape[0] / float(k))
@@ -27,6 +27,8 @@ def get_and_plot_k_eer_auc(label, scores, k=1):
 
         plt.setp(plt.plot(fpr, tpr, label='{} split'.format(split_num)), linewidth=2)
 
+    #print(f'TPR: {tpr}')
+    #print(f'FPR: {fpr}')
     print("EER=", np.mean(EER_VECTOR) * 100)
     print("AUC=", np.mean(AUC_VECTOR) * 100)
 
@@ -57,14 +59,14 @@ class Evaluation:
         self.speaker_models = {}
         for file in os.listdir(speaker_models_path):
             if torch.cuda.is_available():
-                self.speaker_models[file.replace('.pt', '')] = (torch.load(speaker_models_path + '/' + file))
+                self.speaker_models[file.replace('.pt', '')] = (torch.load(os.path.join(speaker_models_path, file)))
             else:
-                self.speaker_models[file.replace('.pt', '')] = (torch.load(speaker_models_path + '/' + file,
+                self.speaker_models[file.replace('.pt', '')] = (torch.load(os.path.join(speaker_models_path, file),
                                                                            map_location=lambda storage, loc: storage))
 
     def compute_Similarity(self, utterance, type='cosine_similarity'):
         self.model.eval()
-        speaker_features = self.model.create_Speaker_Model(utterance).detach().numpy()
+        speaker_features = self.model(utterance, development=False).detach().numpy()
 
         if type == 'cosine_similarity':
 
@@ -82,27 +84,14 @@ class Evaluation:
             return similarity_vec, assigned_speaker_vec
 
 
-def create_dataset(indexed_labels, origin_file_path):
-    from load_data import AudioDataset
 
-    cube_shape = (80, 40, 20)
-    cube = FeatureCube(cube_shape)
-    transform = transforms.Compose([CMVN(), cube, ToTensor()])
-
-    dataset = AudioDataset(
-        origin_file_path,
-        c.DATA_ORIGIN,
-        indexed_labels=indexed_labels,
-        transform=transform)
-
-    return dataset
 
 
 def evaluate():
-    model_path = '/Users/leonidas/Downloads/model_14_percent_best_so_far.pt'
+    model_path = os.path.join(c.ROOT, 'Models/model_14_percent_best_so_far.pt')
 
     if not torch.cuda.is_available():
-        model = C3D2(100, 1).load_checkpoint(torch.load(model_path, map_location=lambda storage,loc: storage))
+        model = C3D2(100, 1).load_checkpoint(torch.load(model_path, map_location=lambda storage, loc: storage))
     else:
         model = C3D2(100, 1).load_checkpoint(torch.load(model_path))
 
@@ -118,10 +107,16 @@ def evaluate():
     labels = []
     scores = []
 
+    correct = 0
+
     for i in range(len(dataset)):
         features = dataset.__getitem__(i)[0]
         [a, b, cc, d] = features.shape
-        s = torch.from_numpy(features.reshape((1, a, b, cc, d)))
+
+        if torch.cuda.is_available():
+            s = torch.from_numpy(features.reshape((1, a, b, cc, d))).cuda()
+        else:
+            s = torch.from_numpy(features.reshape((1, a, b, cc, d)))
 
         similarity_vec, _ = eval.compute_Similarity(s)
         scores.append(similarity_vec)
@@ -131,8 +126,11 @@ def evaluate():
         print('correct speaker {} , the speaker was closer to {}'.format(current_id,
                                                                          speaker_model_ids[np.argmax(similarity_vec)]))
 
+        if current_id == speaker_model_ids[np.argmax(similarity_vec)]:
+            correct += 1
+
         true_label = np.zeros_like(similarity_vec)
-        true_label[np.argwhere(current_id in speaker_model_ids)] = 1
+        true_label[np.where(current_id==np.array(speaker_model_ids))] = 1
         labels.append(true_label)
 
 
@@ -145,6 +143,7 @@ def evaluate():
 
     # fpr, tpr, thresholds = roc_curve(labels[0], scores[0], pos_label=1)
     get_and_plot_k_eer_auc(labels.flatten(), scores.flatten(), k=1)
+    print(f'Accuracy: {correct*100/len(dataset)}%')
 
 
 if __name__ == '__main__':
