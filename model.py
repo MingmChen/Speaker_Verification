@@ -266,7 +266,7 @@ class C3D4(torch.nn.Module):
         self.FC3 = torch.nn.Linear(32*5*7*3, 128)
         self.PReLu5 = torch.nn.PReLU()
         self.FC4 = torch.nn.Linear(128, n_labels)
-        self.softmax =torch.nn.Softmax(dim=0)
+        self.softmax =torch.nn.Softmax(dim=1)
 
     def forward(self, x, development=True):
         x = self.conv1_1(x)
