@@ -135,6 +135,7 @@ def vad_collector(sample_rate, frame_duration_ms,
 def main():
 
     train_files = np.genfromtxt(os.path.join(c.ROOT, '50_first_ids.txt'), dtype='str')
+    train_files = np.genfromtxt(os.path.join(c.ROOT, '100_first_ids_100_samples.txt'), dtype='str')
 
     to_path = os.path.join(c.DATA_ORIGIN, 'wav_chunked')
     from_path = os.path.join(c.DATA_ORIGIN, 'wav')
